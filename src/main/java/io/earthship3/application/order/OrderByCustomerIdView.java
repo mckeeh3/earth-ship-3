@@ -1,8 +1,4 @@
-package io.earthship3.domain.order;
-
-import akka.javasdk.view.TableUpdater;
-import akka.javasdk.view.View;
-import io.earthship3.application.order.OrderEntity;
+package io.earthship3.application.order;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -15,6 +11,9 @@ import org.slf4j.LoggerFactory;
 import akka.javasdk.annotations.ComponentId;
 import akka.javasdk.annotations.Consume;
 import akka.javasdk.annotations.Query;
+import akka.javasdk.view.TableUpdater;
+import akka.javasdk.view.View;
+import io.earthship3.domain.order.Order;
 
 @ComponentId("order-by-customer-id-view")
 public class OrderByCustomerIdView extends View {
@@ -41,7 +40,7 @@ public class OrderByCustomerIdView extends View {
     }
 
     public Effect<OrderRow> onEvent(Order.Event event) {
-      log.info(" ==========>>>> {}", OrderRow.eventToRow(rowState(), event));
+      log.info("Row: {}\n_Event: {}", OrderRow.eventToRow(rowState(), event), event);
       return effects().updateRow(OrderRow.eventToRow(rowState(), event));
     }
   }
@@ -99,7 +98,6 @@ public class OrderByCustomerIdView extends View {
     }
   }
 
-  // this was necessary because views don't support BigDecimals
   public record OrderRow(
       String orderId,
       String customerId,

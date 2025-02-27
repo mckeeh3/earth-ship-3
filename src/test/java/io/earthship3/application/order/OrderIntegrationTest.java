@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 import akka.javasdk.testkit.TestKitSupport;
-import io.earthship3.domain.order.OrderByCustomerIdView;
 import io.earthship3.domain.order.ShoppingCart;
 
 public class OrderIntegrationTest extends TestKitSupport {
