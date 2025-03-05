@@ -52,7 +52,9 @@ public interface Order {
           .reduce(BigDecimal.ZERO, BigDecimal::add);
 
       var event = new Event.OrderCreated(command.orderId(), command.customerId(), List.copyOf(command.lineItems()), totalPrice);
-      var events = command.lineItems().stream().map(item -> new Event.OrderItemCreated(command.orderId(), item.skuId(), item)).toList();
+      var events = command.lineItems().stream()
+          .map(item -> new Event.OrderItemCreated(command.orderId(), item.skuId(), item))
+          .toList();
 
       return Stream.concat(Stream.of((Event) event), events.stream()).toList();
     }
@@ -62,7 +64,9 @@ public interface Order {
         return List.of();
       }
 
-      var newLineItems = lineItems.stream().map(item -> item.skuId().equals(command.skuId()) ? item.withReadyToShipAt() : item).toList();
+      var newLineItems = lineItems.stream()
+          .map(item -> item.skuId().equals(command.skuId()) ? item.withReadyToShipAt() : item)
+          .toList();
       var orderItemReadyToShip = new Event.OrderItemReadyToShip(command.orderId(), command.skuId(), newLineItems);
 
       return isOrderReadyToShip(newLineItems)
@@ -75,7 +79,9 @@ public interface Order {
         return List.of();
       }
 
-      var newLineItems = lineItems.stream().map(item -> item.skuId().equals(command.skuId()) ? item.withBackOrderedAt() : item).toList();
+      var newLineItems = lineItems.stream()
+          .map(item -> item.skuId().equals(command.skuId()) ? item.withBackOrderedAt() : item)
+          .toList();
       var orderItemBackOrdered = new Event.OrderItemBackOrdered(command.orderId(), command.skuId(), newLineItems);
 
       return isOrderBackOrdered(newLineItems)
@@ -89,7 +95,9 @@ public interface Order {
       }
 
       var event = new Event.OrderCancelled(orderId, Optional.of(Instant.now()));
-      var events = lineItems.stream().map(item -> new Event.OrderItemCancelled(orderId, item.skuId(), Optional.of(Instant.now()))).toList();
+      var events = lineItems.stream()
+          .map(item -> new Event.OrderItemCancelled(orderId, item.skuId(), Optional.of(Instant.now())))
+          .toList();
 
       return Stream.concat(Stream.of((Event) event), events.stream()).toList();
     }
