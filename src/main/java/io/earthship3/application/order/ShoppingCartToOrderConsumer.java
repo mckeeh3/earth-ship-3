@@ -23,6 +23,8 @@ public class ShoppingCartToOrderConsumer extends Consumer {
   }
 
   public Effect onEvent(ShoppingCart.Event event) {
+    log.info("Event: {}", event);
+
     return switch (event) {
       case ShoppingCart.Event.CheckedOut e -> onEvent(e);
       default -> effects().ignore();
@@ -30,7 +32,6 @@ public class ShoppingCartToOrderConsumer extends Consumer {
   }
 
   private Effect onEvent(ShoppingCart.Event.CheckedOut event) {
-    log.info("Event: {}", event);
     var lineItems = event.lineItems().stream()
         .map(item -> new Order.LineItem(
             item.skuId(),
