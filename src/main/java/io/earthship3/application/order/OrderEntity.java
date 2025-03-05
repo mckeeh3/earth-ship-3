@@ -57,6 +57,10 @@ public class OrderEntity extends EventSourcedEntity<Order.State, Order.Event> {
         .thenReply(newState -> done());
   }
 
+  public ReadOnlyEffect<Order.State> get() {
+    return effects().reply(currentState());
+  }
+
   @Override
   public Order.State applyEvent(Order.Event event) {
     log.info("EntityId: {}\n_State: {}\n_Event: {}", entityId, currentState(), event);
