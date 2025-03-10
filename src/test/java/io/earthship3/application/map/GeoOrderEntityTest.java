@@ -18,20 +18,65 @@ public class GeoOrderEntityTest {
 
     var orderId = "123";
     var generatorPosition = new LatLng(51.5074, -0.1278); // London UK
-    var radiusKm = 10;
-    var ordersToBeCreated = GeoOrder.State.maxOrdersPerCreateRequest / 2;
-    var command = new GeoOrder.Command.CreateGeoOrders(orderId, generatorPosition, radiusKm, ordersToBeCreated);
+    var generatorRadiusKm = 10;
+    var ordersToBeCreated = 2;
+    var command = new GeoOrder.Command.CreateGeoOrders(orderId, generatorPosition, generatorRadiusKm, ordersToBeCreated);
     var result = testKit.call(entity -> entity.createGeoOrders(command));
 
     assertTrue(result.isReply());
     assertEquals(done(), result.getReply());
-    assertEquals(ordersToBeCreated, result.getAllEvents().size());
+    assertEquals(2, result.getAllEvents().size());
 
     {
-      var event = result.getNextEventOfType(GeoOrder.Event.GeoOrderToBeGenerated.class);
-      assertEquals(orderId, event.orderId());
+      var event = result.getNextEventOfType(GeoOrder.Event.GeoOrderCreated.class);
+      assertEquals(orderId, event.order().orderId());
       assertTrue(event.order().lineItems().size() > 0);
-      assertTrue(distanceInKm(generatorPosition, event.orderPosition()) <= radiusKm);
+    }
+
+    {
+      var event = result.getNextEventOfType(GeoOrder.Event.GeoOrdersToBeCreated.class);
+      assertEquals(orderId, event.orderId());
+      assertEquals(generatorPosition, event.generatorPosition());
+      assertEquals(generatorRadiusKm, event.generatorRadiusKm());
+      assertEquals(ordersToBeCreated - 1, event.geoOrdersToBeCreated());
+    }
+  }
+
+  @Test
+  void testCreateGeoOrderMedium() {
+    var testKit = EventSourcedTestKit.of(GeoOrderEntity::new);
+
+    var orderId = "123";
+    var generatorPosition = new LatLng(51.5074, -0.1278); // London UK
+    var generatorRadiusKm = 10;
+    var ordersToBeCreated = 5;
+    var command = new GeoOrder.Command.CreateGeoOrders(orderId, generatorPosition, generatorRadiusKm, ordersToBeCreated);
+    var result = testKit.call(entity -> entity.createGeoOrders(command));
+
+    assertTrue(result.isReply());
+    assertEquals(done(), result.getReply());
+    assertEquals(3, result.getAllEvents().size());
+
+    {
+      var event = result.getNextEventOfType(GeoOrder.Event.GeoOrderCreated.class);
+      assertEquals(orderId, event.order().orderId());
+      assertTrue(event.order().lineItems().size() > 0);
+    }
+
+    {
+      var event = result.getNextEventOfType(GeoOrder.Event.GeoOrdersToBeCreated.class);
+      assertEquals(orderId, event.orderId());
+      assertEquals(generatorPosition, event.generatorPosition());
+      assertEquals(generatorRadiusKm, event.generatorRadiusKm());
+      assertEquals((ordersToBeCreated - 1) / 2, event.geoOrdersToBeCreated());
+    }
+
+    {
+      var event = result.getNextEventOfType(GeoOrder.Event.GeoOrdersToBeCreated.class);
+      assertEquals(orderId, event.orderId());
+      assertEquals(generatorPosition, event.generatorPosition());
+      assertEquals(generatorRadiusKm, event.generatorRadiusKm());
+      assertEquals((ordersToBeCreated - 1) / 2 + (ordersToBeCreated - 1) % 2, event.geoOrdersToBeCreated());
     }
   }
 
@@ -41,28 +86,35 @@ public class GeoOrderEntityTest {
 
     var orderId = "123";
     var generatorPosition = new LatLng(51.5074, -0.1278); // London UK
-    var radiusKm = 10;
-    var ordersToBeCreated = GeoOrder.State.maxOrdersPerCreateRequest * 5;
-    var command = new GeoOrder.Command.CreateGeoOrders(orderId, generatorPosition, radiusKm, ordersToBeCreated);
+    var generatorRadiusKm = 10;
+    var ordersToBeCreated = 127; // Prime number between 100-200
+    var command = new GeoOrder.Command.CreateGeoOrders(orderId, generatorPosition, generatorRadiusKm, ordersToBeCreated);
     var result = testKit.call(entity -> entity.createGeoOrders(command));
 
     assertTrue(result.isReply());
     assertEquals(done(), result.getReply());
-    assertEquals(GeoOrder.State.maxOrdersPerCreateRequest + 1, result.getAllEvents().size());
+    assertEquals(3, result.getAllEvents().size());
 
     {
-      var event = result.getNextEventOfType(GeoOrder.Event.GeoOrdersCreated.class);
-      assertEquals(orderId, event.orderId());
-      assertEquals(generatorPosition, event.generatorPosition());
-      assertEquals(radiusKm, event.radiusKm());
-      assertEquals(ordersToBeCreated - GeoOrder.State.maxOrdersPerCreateRequest, event.geoOrdersToBeCreated());
+      var event = result.getNextEventOfType(GeoOrder.Event.GeoOrderCreated.class);
+      assertEquals(orderId, event.order().orderId());
+      assertTrue(event.order().lineItems().size() > 0);
     }
 
     {
-      var event = result.getNextEventOfType(GeoOrder.Event.GeoOrderToBeGenerated.class);
+      var event = result.getNextEventOfType(GeoOrder.Event.GeoOrdersToBeCreated.class);
       assertEquals(orderId, event.orderId());
-      assertTrue(event.order().lineItems().size() > 0);
-      assertTrue(distanceInKm(generatorPosition, event.orderPosition()) <= radiusKm);
+      assertEquals(generatorPosition, event.generatorPosition());
+      assertEquals(generatorRadiusKm, event.generatorRadiusKm());
+      assertEquals((ordersToBeCreated - 1) / 2, event.geoOrdersToBeCreated());
+    }
+
+    {
+      var event = result.getNextEventOfType(GeoOrder.Event.GeoOrdersToBeCreated.class);
+      assertEquals(orderId, event.orderId());
+      assertEquals(generatorPosition, event.generatorPosition());
+      assertEquals(generatorRadiusKm, event.generatorRadiusKm());
+      assertEquals((ordersToBeCreated - 1) / 2 + (ordersToBeCreated - 1) % 2, event.geoOrdersToBeCreated());
     }
   }
 
@@ -72,9 +124,9 @@ public class GeoOrderEntityTest {
 
     var orderId = "123";
     var generatorPosition = new LatLng(51.5074, -0.1278); // London UK
-    var radiusKm = 10;
+    var generatorRadiusKm = 10;
     var ordersToBeCreated = 1;
-    var command1 = new GeoOrder.Command.CreateGeoOrders(orderId, generatorPosition, radiusKm, ordersToBeCreated);
+    var command1 = new GeoOrder.Command.CreateGeoOrders(orderId, generatorPosition, generatorRadiusKm, ordersToBeCreated);
     var result1 = testKit.call(entity -> entity.createGeoOrders(command1));
 
     assertTrue(result1.isReply());
@@ -82,22 +134,10 @@ public class GeoOrderEntityTest {
     assertEquals(ordersToBeCreated, result1.getAllEvents().size());
 
     {
-      var event1 = result1.getNextEventOfType(GeoOrder.Event.GeoOrderToBeGenerated.class);
-      assertEquals(orderId, event1.orderId());
-      assertTrue(event1.order().lineItems().size() > 0);
-      assertTrue(distanceInKm(generatorPosition, event1.orderPosition()) <= radiusKm);
-
-      var command2 = new GeoOrder.Command.CreateGeoOrder(event1.orderId(), event1.orderPosition(), event1.order());
-      var result2 = testKit.call(entity -> entity.createGeoOrder(command2));
-
-      assertTrue(result2.isReply());
-      assertEquals(done(), result2.getReply());
-      assertEquals(1, result2.getAllEvents().size());
-
-      var event2 = result2.getNextEventOfType(GeoOrder.Event.GeoOrderCreated.class);
-      assertEquals(orderId, event2.orderId());
-      assertEquals(event1.orderPosition(), event2.orderPosition());
-      assertEquals(event1.order(), event2.order());
+      var event = result1.getNextEventOfType(GeoOrder.Event.GeoOrderCreated.class);
+      assertEquals(orderId, event.order().orderId());
+      assertTrue(event.order().lineItems().size() > 0);
+      assertTrue(distanceInKm(generatorPosition, event.position()) <= generatorRadiusKm);
     }
   }
 

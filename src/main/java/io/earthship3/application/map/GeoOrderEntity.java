@@ -5,11 +5,13 @@ import org.slf4j.LoggerFactory;
 import static akka.Done.done;
 
 import akka.Done;
+import akka.javasdk.annotations.ComponentId;
 import akka.javasdk.eventsourcedentity.EventSourcedEntity;
 import akka.javasdk.eventsourcedentity.EventSourcedEntityContext;
 import io.earthship3.domain.map.GeoOrder;
 import io.earthship3.domain.map.GeoOrder.State;
 
+@ComponentId("geo-order-entity")
 public class GeoOrderEntity extends EventSourcedEntity<GeoOrder.State, GeoOrder.Event> {
   private final Logger log = LoggerFactory.getLogger(GeoOrderEntity.class);
   private final String entityId;
@@ -49,8 +51,7 @@ public class GeoOrderEntity extends EventSourcedEntity<GeoOrder.State, GeoOrder.
 
     return switch (event) {
       case GeoOrder.Event.GeoOrderCreated e -> currentState().onEvent(e);
-      case GeoOrder.Event.GeoOrderToBeGenerated e -> currentState().onEvent(e);
-      case GeoOrder.Event.GeoOrdersCreated e -> currentState().onEvent(e);
+      case GeoOrder.Event.GeoOrdersToBeCreated e -> currentState().onEvent(e);
     };
   }
 }

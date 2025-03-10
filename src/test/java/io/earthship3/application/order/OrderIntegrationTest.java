@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 import akka.javasdk.testkit.TestKitSupport;
-import io.earthship3.application.order.OrderByCustomerIdView.Orders;
+import io.earthship3.application.order.OrderView.Orders;
 import io.earthship3.domain.order.ShoppingCart;
 
 public class OrderIntegrationTest extends TestKitSupport {
@@ -40,20 +40,21 @@ public class OrderIntegrationTest extends TestKitSupport {
     }
 
     {
-      var result = queryOrdersByCustomerId(customerId);
+      var result = queryOrders(customerId);
 
-      var orders = Stream.iterate(result, r -> {
+      var orderCreatedInView = Stream.iterate(result, r -> {
         sleep(1);
-        return queryOrdersByCustomerId(customerId);
-      }).takeWhile(r -> r.orders().isEmpty()).toList();
-      assertTrue(orders.size() > 0);
+        return queryOrders(customerId);
+      }).anyMatch(r -> !r.orders().isEmpty());
+      assertTrue(orderCreatedInView);
+      assertEquals(1, queryOrders(customerId).orders().size());
     }
   }
 
-  private Orders queryOrdersByCustomerId(String customerId) {
+  private Orders queryOrders(String customerId) {
     return await(
         componentClient.forView()
-            .method(OrderByCustomerIdView::findByCustomerId)
+            .method(OrderView::findByCustomerId)
             .invokeAsync(customerId));
   }
 

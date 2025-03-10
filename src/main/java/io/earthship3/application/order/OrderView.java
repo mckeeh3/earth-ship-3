@@ -15,9 +15,9 @@ import akka.javasdk.view.TableUpdater;
 import akka.javasdk.view.View;
 import io.earthship3.domain.order.Order;
 
-@ComponentId("order-by-customer-id-view")
-public class OrderByCustomerIdView extends View {
-  private final Logger log = LoggerFactory.getLogger(OrderByCustomerIdView.class);
+@ComponentId("order-view")
+public class OrderView extends View {
+  private final Logger log = LoggerFactory.getLogger(OrderView.class);
 
   @Query("""
       SELECT * as orders

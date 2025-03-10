@@ -23,8 +23,6 @@ public class ShoppingCartToOrderConsumer extends Consumer {
   }
 
   public Effect onEvent(ShoppingCart.Event event) {
-    log.info("Event: {}", event);
-
     return switch (event) {
       case ShoppingCart.Event.CheckedOut e -> onEvent(e);
       default -> effects().ignore();
@@ -32,6 +30,8 @@ public class ShoppingCartToOrderConsumer extends Consumer {
   }
 
   private Effect onEvent(ShoppingCart.Event.CheckedOut event) {
+    log.info("Event: {}", event);
+
     var lineItems = event.lineItems().stream()
         .map(item -> new Order.LineItem(
             item.skuId(),
@@ -42,10 +42,10 @@ public class ShoppingCartToOrderConsumer extends Consumer {
             Optional.empty()))
         .toList();
     var command = new Order.Command.CreateOrder(event.orderId(), event.customerId(), lineItems);
-    var order = componentClient.forEventSourcedEntity(event.orderId())
+    var done = componentClient.forEventSourcedEntity(event.orderId())
         .method(OrderEntity::createOrder)
         .invokeAsync(command);
 
-    return effects().asyncDone(order);
+    return effects().asyncDone(done);
   }
 }
