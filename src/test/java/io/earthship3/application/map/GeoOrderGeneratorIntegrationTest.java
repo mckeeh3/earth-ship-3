@@ -10,31 +10,32 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 import akka.javasdk.testkit.TestKitSupport;
-import io.earthship3.domain.map.GeoOrder;
+import io.earthship3.domain.map.GeoOrderGenerator;
 import io.earthship3.domain.map.LatLng;
 
-public class GeoOrderIntegrationTest extends TestKitSupport {
+public class GeoOrderGeneratorIntegrationTest extends TestKitSupport {
 
   @Test
-  public void testCreateGeoOrder() {
-    var orderId = "456";
-    var orderPosition = new LatLng(51.5074, -0.1278); // London UK
-    var geoOrdersToBeCreated = 10;
+  public void testCreateGeoOrderGenerator() {
+    var generatorId = "123";
+    var position = new LatLng(51.5074, -0.1278); // London UK
     var radiusKm = 10;
+    var ratePerSecond = 1000;
+    var geoOrdersToGenerate = 10;
 
     {
-      var command = new GeoOrder.Command.CreateGeoOrders(orderId, orderPosition, radiusKm, geoOrdersToBeCreated);
+      var command = new GeoOrderGenerator.Command.CreateGeoOrderGenerator(generatorId, position, radiusKm, ratePerSecond, geoOrdersToGenerate);
       var result = await(
-          componentClient.forEventSourcedEntity(orderId)
-              .method(GeoOrderEntity::createGeoOrders)
+          componentClient.forEventSourcedEntity(generatorId)
+              .method(GeoOrderGeneratorEntity::createGenerator)
               .invokeAsync(command));
 
       assertEquals(done(), result);
     }
 
     {
-      var topLeft = orderPosition.topLeft(radiusKm);
-      var bottomRight = orderPosition.bottomRight(radiusKm);
+      var topLeft = position.topLeft(radiusKm);
+      var bottomRight = position.bottomRight(radiusKm);
       var nextPageToken = "";
       var area = new GeoOrderView.Area(topLeft.lat(), topLeft.lng(), bottomRight.lat(), bottomRight.lng(), nextPageToken);
 
@@ -43,9 +44,9 @@ public class GeoOrderIntegrationTest extends TestKitSupport {
       var geoOrdersCreated = Stream.iterate(result, r -> {
         sleep(1);
         return queryGeoOrders(area);
-      }).anyMatch(r -> r.count() >= geoOrdersToBeCreated);
+      }).anyMatch(r -> r.count() >= geoOrdersToGenerate);
       assertTrue(geoOrdersCreated);
-      assertEquals(geoOrdersToBeCreated, queryGeoOrders(area).count());
+      assertEquals(geoOrdersToGenerate, queryGeoOrders(area).count());
     }
   }
 
