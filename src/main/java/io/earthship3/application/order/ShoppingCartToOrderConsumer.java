@@ -41,7 +41,7 @@ public class ShoppingCartToOrderConsumer extends Consumer {
             Optional.empty(),
             Optional.empty()))
         .toList();
-    var command = new Order.Command.CreateOrder(event.orderId(), event.customerId(), lineItems);
+    var command = new Order.Command.CreateOrder(event.orderId(), event.customerId(), event.checkedOutAt(), lineItems);
     var done = componentClient.forEventSourcedEntity(event.orderId())
         .method(OrderEntity::createOrder)
         .invokeAsync(command);

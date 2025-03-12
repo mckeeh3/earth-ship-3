@@ -21,7 +21,7 @@ public class GeoOrderEntityTest {
     var generatorRadiusKm = 10;
     var ordersToBeCreated = 2;
     var command = new GeoOrder.Command.CreateGeoOrders(orderId, generatorPosition, generatorRadiusKm, ordersToBeCreated);
-    var result = testKit.call(entity -> entity.createGeoOrders(command));
+    var result = testKit.method(GeoOrderEntity::createGeoOrders).invoke(command);
 
     assertTrue(result.isReply());
     assertEquals(done(), result.getReply());
@@ -51,7 +51,7 @@ public class GeoOrderEntityTest {
     var generatorRadiusKm = 10;
     var ordersToBeCreated = 5;
     var command = new GeoOrder.Command.CreateGeoOrders(orderId, generatorPosition, generatorRadiusKm, ordersToBeCreated);
-    var result = testKit.call(entity -> entity.createGeoOrders(command));
+    var result = testKit.method(GeoOrderEntity::createGeoOrders).invoke(command);
 
     assertTrue(result.isReply());
     assertEquals(done(), result.getReply());
@@ -89,7 +89,7 @@ public class GeoOrderEntityTest {
     var generatorRadiusKm = 10;
     var ordersToBeCreated = 127; // Prime number between 100-200
     var command = new GeoOrder.Command.CreateGeoOrders(orderId, generatorPosition, generatorRadiusKm, ordersToBeCreated);
-    var result = testKit.call(entity -> entity.createGeoOrders(command));
+    var result = testKit.method(GeoOrderEntity::createGeoOrders).invoke(command);
 
     assertTrue(result.isReply());
     assertEquals(done(), result.getReply());
@@ -127,7 +127,7 @@ public class GeoOrderEntityTest {
     var generatorRadiusKm = 10;
     var ordersToBeCreated = 1;
     var command1 = new GeoOrder.Command.CreateGeoOrders(orderId, generatorPosition, generatorRadiusKm, ordersToBeCreated);
-    var result1 = testKit.call(entity -> entity.createGeoOrders(command1));
+    var result1 = testKit.method(GeoOrderEntity::createGeoOrders).invoke(command1);
 
     assertTrue(result1.isReply());
     assertEquals(done(), result1.getReply());

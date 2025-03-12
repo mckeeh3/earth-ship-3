@@ -4,11 +4,11 @@
   <parent>
     <groupId>io.akka</groupId>
     <artifactId>akka-javasdk-parent</artifactId>
-    <version>3.2.0</version>
+    <version>3.2.1</version>
   </parent>
   
   <groupId>io.earthship3</groupId>
-  <artifactId>earthship3</artifactId>
+  <artifactId>earth-ship-3</artifactId>
   <version>0.0.1</version>
   <packaging>jar</packaging>
 

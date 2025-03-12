@@ -1,0 +1,51 @@
+@urlPrefix = http://localhost:9001
+@customerId = customer-1
+@skuId = P0001
+@skuName = Product 1
+@price = 100.00
+@quantity = 1
+
+### Add line item
+PUT {{urlPrefix}}/shopping-cart/add-line-item
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "skuId": "{{skuId}}",
+  "skuName": "{{skuName}}",
+  "price": {{price}},
+  "quantity": {{quantity}}
+}
+
+### Update line item
+PUT {{urlPrefix}}/shopping-cart/update-line-item
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "skuId": "{{skuId}}",
+  "skuName": "{{skuName}}",
+  "price": {{price}},
+  "quantity": {{quantity}}
+}
+
+### Remove line item
+PUT {{urlPrefix}}/shopping-cart/remove-line-item
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "skuId": "{{skuId}}"
+}
+
+### Checkout
+PUT {{urlPrefix}}/shopping-cart/checkout/
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}"
+}
+
+### Get shopping cart
+GET {{urlPrefix}}/shopping-cart/{{customerId}}
+

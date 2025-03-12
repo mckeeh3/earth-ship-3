@@ -26,7 +26,7 @@ public class ShoppingCartEndpoint {
 
   @Put("/add-line-item")
   public CompletionStage<Done> addLineItem(ShoppingCart.Command.AddLineItem command) {
-    log.info("{}", command);
+    log.info("PUT {}", command);
 
     return componentClient.forEventSourcedEntity(command.customerId())
         .method(ShoppingCartEntity::addLineItem)
@@ -35,7 +35,7 @@ public class ShoppingCartEndpoint {
 
   @Put("/update-line-item")
   public CompletionStage<Done> updateLineItem(ShoppingCart.Command.UpdateLineItem command) {
-    log.info("{}", command);
+    log.info("PUT {}", command);
 
     return componentClient.forEventSourcedEntity(command.customerId())
         .method(ShoppingCartEntity::updateLineItem)
@@ -44,7 +44,7 @@ public class ShoppingCartEndpoint {
 
   @Put("/remove-line-item")
   public CompletionStage<Done> removeLineItem(ShoppingCart.Command.RemoveLineItem command) {
-    log.info("{}", command);
+    log.info("PUT {}", command);
 
     return componentClient.forEventSourcedEntity(command.customerId())
         .method(ShoppingCartEntity::removeLineItem)
@@ -53,16 +53,16 @@ public class ShoppingCartEndpoint {
 
   @Put("/checkout")
   public CompletionStage<Done> checkout(ShoppingCart.Command.Checkout command) {
-    log.info("{}", command);
+    log.info("PUT {}", command);
 
     return componentClient.forEventSourcedEntity(command.customerId())
         .method(ShoppingCartEntity::checkout)
         .invokeAsync(command);
   }
 
-  @Get("/")
+  @Get("/{customerId}")
   public CompletionStage<ShoppingCart.State> shoppingCart(String customerId) {
-    log.info("{}", customerId);
+    log.info("GET {}", customerId);
 
     return componentClient.forEventSourcedEntity(customerId)
         .method(ShoppingCartEntity::get)

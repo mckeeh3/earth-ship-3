@@ -1,6 +1,7 @@
 package io.earthship3.domain.map;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -104,7 +105,7 @@ public interface GeoOrder {
           .limit(random.nextInt(1, 6))
           .toList();
 
-      return new Order.State(orderId, customerId, lineItems, BigDecimal.ZERO, Optional.empty(), Optional.empty(), Optional.empty());
+      return new Order.State(orderId, customerId, lineItems, BigDecimal.ZERO, Instant.EPOCH, Optional.empty(), Optional.empty(), Optional.empty());
     }
   }
 

@@ -1,0 +1,9 @@
+@urlPrefix = http://localhost:9001
+@orderId = 8b29c2f9-2d7e-4251-8025-ea9d18b0ddb6
+@customerId = customer-1
+
+### Get order
+GET {{urlPrefix}}/order/{{orderId}}
+
+### Get orders by customer id
+GET {{urlPrefix}}/order/find-by-customer-id/{{customerId}}

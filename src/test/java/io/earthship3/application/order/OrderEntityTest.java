@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,8 +24,9 @@ class OrderEntityTest {
     var customerId = "456";
     var lineItems = List.of(new Order.LineItem("789", "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()));
 
-    var command = new Order.Command.CreateOrder(orderId, customerId, lineItems);
-    var result = testKit.call(entity -> entity.createOrder(command));
+    var orderedAt = Instant.now();
+    var command = new Order.Command.CreateOrder(orderId, customerId, orderedAt, lineItems);
+    var result = testKit.method(OrderEntity::createOrder).invoke(command);
 
     assertTrue(result.isReply());
     assertEquals(done(), result.getReply());
@@ -36,6 +38,7 @@ class OrderEntityTest {
       assertEquals(customerId, event.customerId());
       assertEquals(lineItems, event.lineItems());
       assertEquals(BigDecimal.valueOf(100), event.totalPrice());
+      assertEquals(orderedAt, event.orderedAt());
     }
 
     {
@@ -68,8 +71,9 @@ class OrderEntityTest {
         new Order.LineItem(skuId2, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()),
         new Order.LineItem(skuId3, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()));
     {
-      var command = new Order.Command.CreateOrder(orderId, "123", lineItems);
-      var result = testKit.call(entity -> entity.createOrder(command));
+      var orderedAt = Instant.now();
+      var command = new Order.Command.CreateOrder(orderId, "123", orderedAt, lineItems);
+      var result = testKit.method(OrderEntity::createOrder).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());
@@ -79,6 +83,7 @@ class OrderEntityTest {
         var event = result.getNextEventOfType(Order.Event.OrderCreated.class);
         assertEquals(orderId, event.orderId());
         assertEquals(lineItems, event.lineItems());
+        assertEquals(orderedAt, event.orderedAt());
       }
 
       {
@@ -102,7 +107,7 @@ class OrderEntityTest {
 
     {
       var command = new Order.Command.OrderItemReadyToShip(orderId, skuId1);
-      var result = testKit.call(entity -> entity.orderItemReadyToShip(command));
+      var result = testKit.method(OrderEntity::orderItemReadyToShip).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());
@@ -119,7 +124,7 @@ class OrderEntityTest {
 
     {
       var command = new Order.Command.OrderItemReadyToShip(orderId, skuId2);
-      var result = testKit.call(entity -> entity.orderItemReadyToShip(command));
+      var result = testKit.method(OrderEntity::orderItemReadyToShip).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());
@@ -136,7 +141,7 @@ class OrderEntityTest {
 
     {
       var command = new Order.Command.OrderItemReadyToShip(orderId, skuId3);
-      var result = testKit.call(entity -> entity.orderItemReadyToShip(command));
+      var result = testKit.method(OrderEntity::orderItemReadyToShip).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());
@@ -182,8 +187,9 @@ class OrderEntityTest {
         .map(item -> item.price().multiply(BigDecimal.valueOf(item.quantity())))
         .reduce(BigDecimal.ZERO, BigDecimal::add);
     {
-      var command = new Order.Command.CreateOrder(orderId, "123", lineItems);
-      var result = testKit.call(entity -> entity.createOrder(command));
+      var orderedAt = Instant.now();
+      var command = new Order.Command.CreateOrder(orderId, "123", orderedAt, lineItems);
+      var result = testKit.method(OrderEntity::createOrder).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());
@@ -192,11 +198,12 @@ class OrderEntityTest {
       var event = result.getNextEventOfType(Order.Event.OrderCreated.class);
       assertEquals(orderId, event.orderId());
       assertEquals(lineItems, event.lineItems());
+      assertEquals(orderedAt, event.orderedAt());
     }
 
     {
       var command = new Order.Command.OrderItemBackOrdered(orderId, skuId1);
-      var result = testKit.call(entity -> entity.orderItemBackOrdered(command));
+      var result = testKit.method(OrderEntity::orderItemBackOrdered).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());
@@ -242,8 +249,9 @@ class OrderEntityTest {
         new Order.LineItem(skuId2, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()),
         new Order.LineItem(skuId3, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()));
     {
-      var command = new Order.Command.CreateOrder(orderId, "123", lineItems);
-      var result = testKit.call(entity -> entity.createOrder(command));
+      var orderedAt = Instant.now();
+      var command = new Order.Command.CreateOrder(orderId, "123", orderedAt, lineItems);
+      var result = testKit.method(OrderEntity::createOrder).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());
@@ -276,7 +284,7 @@ class OrderEntityTest {
 
     {
       var command = new Order.Command.CancelOrder(orderId);
-      var result = testKit.call(entity -> entity.cancelOrder(command));
+      var result = testKit.method(OrderEntity::cancelOrder).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());

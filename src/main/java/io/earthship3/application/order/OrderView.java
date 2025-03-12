@@ -40,7 +40,7 @@ public class OrderView extends View {
     }
 
     public Effect<OrderRow> onEvent(Order.Event event) {
-      log.info("Row: {}\n_Event: {}", OrderRow.eventToRow(rowState(), event), event);
+      log.info("Row: {}\n_Event: {}", rowState(), event);
       return effects().updateRow(OrderRow.eventToRow(rowState(), event));
     }
   }
@@ -103,12 +103,13 @@ public class OrderView extends View {
       String customerId,
       List<LineItem> lineItems,
       double totalPrice,
+      Instant orderedAt,
       Moment readyToShipAt,
       Moment backOrderedAt,
       Moment cancelledAt) {
 
     static OrderRow empty() {
-      return new OrderRow(null, null, List.of(), 0.0, Moment.empty(), Moment.empty(), Moment.empty());
+      return new OrderRow(null, null, List.of(), 0.0, Instant.EPOCH, Moment.empty(), Moment.empty(), Moment.empty());
     }
 
     static OrderRow eventToRow(OrderRow row, Order.Event event) {
@@ -132,6 +133,7 @@ public class OrderView extends View {
           row.customerId(),
           LineItem.rowToOrder(row.lineItems()),
           BigDecimal.valueOf(row.totalPrice()),
+          row.orderedAt(),
           row.readyToShipAt().optionalInstant(),
           row.backOrderedAt().optionalInstant(),
           row.cancelledAt().optionalInstant());
@@ -142,6 +144,7 @@ public class OrderView extends View {
           state.customerId(),
           LineItem.orderToRow(state.lineItems()),
           state.totalPrice().doubleValue(),
+          state.orderedAt(),
           Moment.of(state.readyToShipAt()),
           Moment.of(state.backOrderedAt()),
           Moment.of(state.cancelledAt()));

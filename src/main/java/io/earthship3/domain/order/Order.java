@@ -30,12 +30,13 @@ public interface Order {
       String customerId,
       List<LineItem> lineItems,
       BigDecimal totalPrice,
+      Instant orderedAt,
       Optional<Instant> readyToShipAt,
       Optional<Instant> backOrderedAt,
       Optional<Instant> cancelledAt) {
 
     public static State empty() {
-      return new State(null, null, List.of(), BigDecimal.ZERO, Optional.empty(), Optional.empty(), Optional.empty());
+      return new State(null, null, List.of(), BigDecimal.ZERO, Instant.EPOCH, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     public boolean isEmpty() {
@@ -51,7 +52,7 @@ public interface Order {
           .map(item -> item.price().multiply(BigDecimal.valueOf(item.quantity())))
           .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-      var event = new Event.OrderCreated(command.orderId(), command.customerId(), List.copyOf(command.lineItems()), totalPrice);
+      var event = new Event.OrderCreated(command.orderId(), command.customerId(), command.orderedAt(), List.copyOf(command.lineItems()), totalPrice);
       var events = command.lineItems().stream()
           .map(item -> new Event.OrderItemCreated(command.orderId(), item.skuId(), item))
           .toList();
@@ -115,6 +116,7 @@ public interface Order {
           event.customerId(),
           List.copyOf(event.lineItems()),
           event.totalPrice(),
+          event.orderedAt(),
           Optional.empty(),
           Optional.empty(),
           Optional.empty());
@@ -125,50 +127,60 @@ public interface Order {
     }
 
     public State onEvent(Event.OrderReadyToShip event) {
-      return new State(orderId,
+      return new State(
+          orderId,
           customerId,
           lineItems,
           totalPrice,
+          orderedAt,
           event.readyToShipAt(),
           Optional.empty(),
           Optional.empty());
     }
 
     public State onEvent(Event.OrderBackOrdered event) {
-      return new State(orderId,
+      return new State(
+          orderId,
           customerId,
           lineItems,
           totalPrice,
+          orderedAt,
           Optional.empty(),
           event.backOrderedAt(),
           Optional.empty());
     }
 
     public State onEvent(Event.OrderItemReadyToShip event) {
-      return new State(orderId,
+      return new State(
+          orderId,
           customerId,
           event.lineItems(),
           totalPrice,
+          orderedAt,
           readyToShipAt,
           backOrderedAt,
           cancelledAt);
     }
 
     public State onEvent(Event.OrderItemBackOrdered event) {
-      return new State(orderId,
+      return new State(
+          orderId,
           customerId,
           event.lineItems(),
           totalPrice,
+          orderedAt,
           readyToShipAt,
           backOrderedAt,
           cancelledAt);
     }
 
     public State onEvent(Event.OrderCancelled event) {
-      return new State(orderId,
+      return new State(
+          orderId,
           customerId,
           lineItems,
           totalPrice,
+          orderedAt,
           readyToShipAt,
           backOrderedAt,
           event.cancelledAt());
@@ -180,7 +192,7 @@ public interface Order {
   }
 
   public sealed interface Command {
-    record CreateOrder(String orderId, String customerId, List<LineItem> lineItems) implements Command {}
+    record CreateOrder(String orderId, String customerId, Instant orderedAt, List<LineItem> lineItems) implements Command {}
 
     record OrderItemReadyToShip(String orderId, String skuId) implements Command {}
 
@@ -190,7 +202,7 @@ public interface Order {
   }
 
   public sealed interface Event {
-    record OrderCreated(String orderId, String customerId, List<LineItem> lineItems, BigDecimal totalPrice) implements Event {}
+    record OrderCreated(String orderId, String customerId, Instant orderedAt, List<LineItem> lineItems, BigDecimal totalPrice) implements Event {}
 
     record OrderItemCreated(String orderId, String skuId, LineItem lineItem) implements Event {}
 

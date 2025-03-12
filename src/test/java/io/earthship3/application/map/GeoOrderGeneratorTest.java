@@ -25,7 +25,7 @@ public class GeoOrderGeneratorTest {
     var geoOrdersToGenerate = 10;
 
     var command = new GeoOrderGenerator.Command.CreateGeoOrderGenerator(generatorId, position, radiusKm, ratePerSecond, geoOrdersToGenerate);
-    var result = testKit.call(entity -> entity.createGenerator(command));
+    var result = testKit.method(GeoOrderGeneratorEntity::createGenerator).invoke(command);
 
     assertTrue(result.isReply());
     assertEquals(done(), result.getReply());
@@ -77,7 +77,7 @@ public class GeoOrderGeneratorTest {
 
     {
       var command = new GeoOrderGenerator.Command.CreateGeoOrderGenerator(generatorId, position, radiusKm, ratePerSecond, geoOrdersToGenerate);
-      var result = testKit.call(entity -> entity.createGenerator(command));
+      var result = testKit.method(GeoOrderGeneratorEntity::createGenerator).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());
@@ -86,7 +86,7 @@ public class GeoOrderGeneratorTest {
 
     {
       var command = new GeoOrderGenerator.Command.GenerateGeoOrders(generatorId);
-      var result = testKit.call(entity -> entity.generateGeoOrders(command));
+      var result = testKit.method(GeoOrderGeneratorEntity::generateGeoOrders).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());
@@ -118,7 +118,7 @@ public class GeoOrderGeneratorTest {
 
     {
       var command = new GeoOrderGenerator.Command.CreateGeoOrderGenerator(generatorId, position, radiusKm, ratePerSecond, geoOrdersToGenerate);
-      var result = testKit.call(entity -> entity.createGenerator(command));
+      var result = testKit.method(GeoOrderGeneratorEntity::createGenerator).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());
@@ -127,7 +127,7 @@ public class GeoOrderGeneratorTest {
 
     { // this should generate 10 geo orders due to very high rate per second
       var command = new GeoOrderGenerator.Command.GenerateGeoOrders(generatorId);
-      var result = testKit.call(entity -> entity.generateGeoOrders(command));
+      var result = testKit.method(GeoOrderGeneratorEntity::generateGeoOrders).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());
@@ -136,7 +136,7 @@ public class GeoOrderGeneratorTest {
 
     { // this should not generate any geo orders due to the limit
       var command = new GeoOrderGenerator.Command.GenerateGeoOrders(generatorId);
-      var result = testKit.call(entity -> entity.generateGeoOrders(command));
+      var result = testKit.method(GeoOrderGeneratorEntity::generateGeoOrders).invoke(command);
 
       assertTrue(result.isReply());
       assertEquals(done(), result.getReply());
