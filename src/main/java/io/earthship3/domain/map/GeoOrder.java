@@ -15,15 +15,22 @@ import io.earthship3.domain.order.Order;
  * within a specified radius around a central point - Handle the state management of geo-orders through command and
  * event patterns
  *
- * The implementation uses the Command-Event pattern where: - Commands (CreateGeoOrder, CreateGeoOrders) trigger state
- * changes - Events (GeoOrderCreated, GeoOrderToBeGenerated, GeoOrdersCreated) record what happened - State maintains
- * the current status of a geo-order including its position and order details
+ * The implementation uses the Command-Event pattern where:
+ * <ul>
+ * <li>Commands (CreateGeoOrder, CreateGeoOrders) trigger state changes</li>
+ * <li>Events (GeoOrderCreated, GeoOrderToBeGenerated, GeoOrdersCreated) record what happened</li>
+ * <li>State maintains the current status of a geo-order including its position and order details</li>
+ * </ul>
  *
- * For bulk order generation within a circular region: - Orders are randomly distributed using a uniform distribution
- * within the specified radius - The algorithm uses polar coordinates and the haversine formula to properly distribute
- * points on the Earth's surface - A maximum of maxOrdersPerCreateRequest orders can be created in a single request to
- * throttle system load - Each generated order includes random line items (1-5 items) with quantities between 1-5 -
- * Product IDs are generated in the format P0001 to P0030
+ * For bulk order generation within a circular region:
+ * <ul>
+ * <li>Orders are randomly distributed using a uniform distribution within the specified radius</li>
+ * <li>The algorithm uses polar coordinates and the haversine formula to properly distribute points on the Earth's
+ * surface</li>
+ * <li>A maximum of maxOrdersPerCreateRequest orders can be created in a single request to throttle system load</li>
+ * <li>Each generated order includes random line items (1-5 items) with quantities between 1-5</li>
+ * <li>Product IDs are generated in the format P0001 to P0030</li>
+ * </ul>
  */
 public interface GeoOrder {
   public record State(
