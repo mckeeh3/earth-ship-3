@@ -9,19 +9,19 @@ import java.util.stream.Stream;
 public interface Order {
 
   public record LineItem(
-      String skuId,
-      String skuName,
+      String stockId,
+      String stockName,
       BigDecimal price,
       int quantity,
       Optional<Instant> readyToShipAt,
       Optional<Instant> backOrderedAt) {
 
     public LineItem withReadyToShipAt() {
-      return new LineItem(skuId, skuName, price, quantity, Optional.of(Instant.now()), Optional.empty());
+      return new LineItem(stockId, stockName, price, quantity, Optional.of(Instant.now()), Optional.empty());
     }
 
     public LineItem withBackOrderedAt() {
-      return new LineItem(skuId, skuName, price, quantity, Optional.empty(), Optional.of(Instant.now()));
+      return new LineItem(stockId, stockName, price, quantity, Optional.empty(), Optional.of(Instant.now()));
     }
   }
 
@@ -54,21 +54,21 @@ public interface Order {
 
       var event = new Event.OrderCreated(command.orderId(), command.customerId(), command.orderedAt(), List.copyOf(command.lineItems()), totalPrice);
       var events = command.lineItems().stream()
-          .map(item -> new Event.OrderItemCreated(command.orderId(), item.skuId(), item))
+          .map(item -> new Event.OrderItemCreated(command.orderId(), item.stockId(), item))
           .toList();
 
       return Stream.concat(Stream.of((Event) event), events.stream()).toList();
     }
 
     public List<Event> onCommand(Command.OrderItemReadyToShip command) {
-      if (lineItems.stream().noneMatch(item -> item.skuId().equals(command.skuId()))) {
+      if (lineItems.stream().noneMatch(item -> item.stockId().equals(command.stockId()))) {
         return List.of();
       }
 
       var newLineItems = lineItems.stream()
-          .map(item -> item.skuId().equals(command.skuId()) ? item.withReadyToShipAt() : item)
+          .map(item -> item.stockId().equals(command.stockId()) ? item.withReadyToShipAt() : item)
           .toList();
-      var orderItemReadyToShip = new Event.OrderItemReadyToShip(command.orderId(), command.skuId(), newLineItems);
+      var orderItemReadyToShip = new Event.OrderItemReadyToShip(command.orderId(), command.stockId(), newLineItems);
 
       return isOrderReadyToShip(newLineItems)
           ? List.of(orderItemReadyToShip, new Event.OrderReadyToShip(orderId, Optional.of(Instant.now())))
@@ -76,14 +76,14 @@ public interface Order {
     }
 
     public List<Event> onCommand(Command.OrderItemBackOrdered command) {
-      if (lineItems.stream().noneMatch(item -> item.skuId().equals(command.skuId()))) {
+      if (lineItems.stream().noneMatch(item -> item.stockId().equals(command.stockId()))) {
         return List.of();
       }
 
       var newLineItems = lineItems.stream()
-          .map(item -> item.skuId().equals(command.skuId()) ? item.withBackOrderedAt() : item)
+          .map(item -> item.stockId().equals(command.stockId()) ? item.withBackOrderedAt() : item)
           .toList();
-      var orderItemBackOrdered = new Event.OrderItemBackOrdered(command.orderId(), command.skuId(), newLineItems);
+      var orderItemBackOrdered = new Event.OrderItemBackOrdered(command.orderId(), command.stockId(), newLineItems);
 
       return isOrderBackOrdered(newLineItems)
           ? List.of(orderItemBackOrdered, new Event.OrderBackOrdered(orderId, Optional.of(Instant.now())))
@@ -97,7 +97,7 @@ public interface Order {
 
       var event = new Event.OrderCancelled(orderId, Optional.of(Instant.now()));
       var events = lineItems.stream()
-          .map(item -> new Event.OrderItemCancelled(orderId, item.skuId(), Optional.of(Instant.now())))
+          .map(item -> new Event.OrderItemCancelled(orderId, item.stockId(), Optional.of(Instant.now())))
           .toList();
 
       return Stream.concat(Stream.of((Event) event), events.stream()).toList();
@@ -194,9 +194,9 @@ public interface Order {
   public sealed interface Command {
     record CreateOrder(String orderId, String customerId, Instant orderedAt, List<LineItem> lineItems) implements Command {}
 
-    record OrderItemReadyToShip(String orderId, String skuId) implements Command {}
+    record OrderItemReadyToShip(String orderId, String stockId) implements Command {}
 
-    record OrderItemBackOrdered(String orderId, String skuId) implements Command {}
+    record OrderItemBackOrdered(String orderId, String stockId) implements Command {}
 
     record CancelOrder(String orderId) implements Command {}
   }
@@ -204,18 +204,18 @@ public interface Order {
   public sealed interface Event {
     record OrderCreated(String orderId, String customerId, Instant orderedAt, List<LineItem> lineItems, BigDecimal totalPrice) implements Event {}
 
-    record OrderItemCreated(String orderId, String skuId, LineItem lineItem) implements Event {}
+    record OrderItemCreated(String orderId, String stockId, LineItem lineItem) implements Event {}
 
     record OrderReadyToShip(String orderId, Optional<Instant> readyToShipAt) implements Event {}
 
     record OrderBackOrdered(String orderId, Optional<Instant> backOrderedAt) implements Event {}
 
-    record OrderItemReadyToShip(String orderId, String skuId, List<LineItem> lineItems) implements Event {}
+    record OrderItemReadyToShip(String orderId, String stockId, List<LineItem> lineItems) implements Event {}
 
-    record OrderItemBackOrdered(String orderId, String skuId, List<LineItem> lineItems) implements Event {}
+    record OrderItemBackOrdered(String orderId, String stockId, List<LineItem> lineItems) implements Event {}
 
     record OrderCancelled(String orderId, Optional<Instant> cancelledAt) implements Event {}
 
-    record OrderItemCancelled(String orderId, String skuId, Optional<Instant> cancelledAt) implements Event {}
+    record OrderItemCancelled(String orderId, String stockId, Optional<Instant> cancelledAt) implements Event {}
   }
 }

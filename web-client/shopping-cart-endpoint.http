@@ -1,7 +1,7 @@
 @urlPrefix = http://localhost:9001
 @customerId = customer-1
-@skuId = P0001
-@skuName = Product 1
+@stockId = P0001
+@stockName = Product 1
 @price = 100.00
 @quantity = 1
 
@@ -11,8 +11,8 @@ Content-Type: application/json
 
 {
   "customerId": "{{customerId}}",
-  "skuId": "{{skuId}}",
-  "skuName": "{{skuName}}",
+  "stockId": "{{stockId}}",
+  "stockName": "{{stockName}}",
   "price": {{price}},
   "quantity": {{quantity}}
 }
@@ -23,8 +23,8 @@ Content-Type: application/json
 
 {
   "customerId": "{{customerId}}",
-  "skuId": "{{skuId}}",
-  "skuName": "{{skuName}}",
+  "stockId": "{{stockId}}",
+  "stockName": "{{stockName}}",
   "price": {{price}},
   "quantity": {{quantity}}
 }
@@ -35,7 +35,7 @@ Content-Type: application/json
 
 {
   "customerId": "{{customerId}}",
-  "skuId": "{{skuId}}"
+  "stockId": "{{stockId}}"
 }
 
 ### Checkout

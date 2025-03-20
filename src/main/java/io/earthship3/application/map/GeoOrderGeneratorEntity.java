@@ -13,7 +13,7 @@ import io.earthship3.domain.map.GeoOrderGenerator;
 import io.earthship3.domain.map.GeoOrderGenerator.Event;
 import io.earthship3.domain.map.GeoOrderGenerator.State;
 
-@ComponentId("geo-order-generator")
+@ComponentId("geo-order-generator-entity")
 public class GeoOrderGeneratorEntity extends EventSourcedEntity<GeoOrderGenerator.State, GeoOrderGenerator.Event> {
   private final Logger log = LoggerFactory.getLogger(GeoOrderGeneratorEntity.class);
   private final String entityId;

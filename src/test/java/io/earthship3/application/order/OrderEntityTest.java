@@ -44,7 +44,7 @@ class OrderEntityTest {
     {
       var event = result.getNextEventOfType(Order.Event.OrderItemCreated.class);
       assertEquals(orderId, event.orderId());
-      assertEquals(lineItems.get(0).skuId(), event.skuId());
+      assertEquals(lineItems.get(0).stockId(), event.stockId());
       assertEquals(lineItems.get(0), event.lineItem());
     }
 
@@ -63,13 +63,13 @@ class OrderEntityTest {
     var testKit = EventSourcedTestKit.of(OrderEntity::new);
 
     var orderId = "123";
-    var skuId1 = "456";
-    var skuId2 = "789";
-    var skuId3 = "012";
+    var stockId1 = "456";
+    var stockId2 = "789";
+    var stockId3 = "012";
     var lineItems = List.of(
-        new Order.LineItem(skuId1, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()),
-        new Order.LineItem(skuId2, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()),
-        new Order.LineItem(skuId3, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()));
+        new Order.LineItem(stockId1, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()),
+        new Order.LineItem(stockId2, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()),
+        new Order.LineItem(stockId3, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()));
     {
       var orderedAt = Instant.now();
       var command = new Order.Command.CreateOrder(orderId, "123", orderedAt, lineItems);
@@ -89,24 +89,24 @@ class OrderEntityTest {
       {
         var event = result.getNextEventOfType(Order.Event.OrderItemCreated.class);
         assertEquals(orderId, event.orderId());
-        assertEquals(lineItems.get(0).skuId(), event.skuId());
+        assertEquals(lineItems.get(0).stockId(), event.stockId());
       }
 
       {
         var event = result.getNextEventOfType(Order.Event.OrderItemCreated.class);
         assertEquals(orderId, event.orderId());
-        assertEquals(lineItems.get(1).skuId(), event.skuId());
+        assertEquals(lineItems.get(1).stockId(), event.stockId());
       }
 
       {
         var event = result.getNextEventOfType(Order.Event.OrderItemCreated.class);
         assertEquals(orderId, event.orderId());
-        assertEquals(lineItems.get(2).skuId(), event.skuId());
+        assertEquals(lineItems.get(2).stockId(), event.stockId());
       }
     }
 
     {
-      var command = new Order.Command.OrderItemReadyToShip(orderId, skuId1);
+      var command = new Order.Command.OrderItemReadyToShip(orderId, stockId1);
       var result = testKit.method(OrderEntity::orderItemReadyToShip).invoke(command);
 
       assertTrue(result.isReply());
@@ -115,15 +115,15 @@ class OrderEntityTest {
 
       var event = result.getNextEventOfType(Order.Event.OrderItemReadyToShip.class);
       assertEquals(orderId, event.orderId());
-      assertEquals(skuId1, event.skuId());
+      assertEquals(stockId1, event.stockId());
 
-      var lineItem = event.lineItems().stream().filter(item -> item.skuId().equals(skuId1)).findFirst().orElseThrow();
-      assertEquals(skuId1, lineItem.skuId());
+      var lineItem = event.lineItems().stream().filter(item -> item.stockId().equals(stockId1)).findFirst().orElseThrow();
+      assertEquals(stockId1, lineItem.stockId());
       assertTrue(lineItem.readyToShipAt().isPresent());
     }
 
     {
-      var command = new Order.Command.OrderItemReadyToShip(orderId, skuId2);
+      var command = new Order.Command.OrderItemReadyToShip(orderId, stockId2);
       var result = testKit.method(OrderEntity::orderItemReadyToShip).invoke(command);
 
       assertTrue(result.isReply());
@@ -132,15 +132,15 @@ class OrderEntityTest {
 
       var event = result.getNextEventOfType(Order.Event.OrderItemReadyToShip.class);
       assertEquals(orderId, event.orderId());
-      assertEquals(skuId2, event.skuId());
+      assertEquals(stockId2, event.stockId());
 
-      var lineItem = event.lineItems().stream().filter(item -> item.skuId().equals(skuId2)).findFirst().orElseThrow();
-      assertEquals(skuId2, lineItem.skuId());
+      var lineItem = event.lineItems().stream().filter(item -> item.stockId().equals(stockId2)).findFirst().orElseThrow();
+      assertEquals(stockId2, lineItem.stockId());
       assertTrue(lineItem.readyToShipAt().isPresent());
     }
 
     {
-      var command = new Order.Command.OrderItemReadyToShip(orderId, skuId3);
+      var command = new Order.Command.OrderItemReadyToShip(orderId, stockId3);
       var result = testKit.method(OrderEntity::orderItemReadyToShip).invoke(command);
 
       assertTrue(result.isReply());
@@ -150,7 +150,7 @@ class OrderEntityTest {
       {
         var event = result.getNextEventOfType(Order.Event.OrderItemReadyToShip.class);
         assertEquals(orderId, event.orderId());
-        assertEquals(skuId3, event.skuId());
+        assertEquals(stockId3, event.stockId());
         assertEquals(lineItems.size(), event.lineItems().size());
         assertTrue(event.lineItems().stream().allMatch(item -> item.readyToShipAt().isPresent()));
       }
@@ -176,13 +176,13 @@ class OrderEntityTest {
     var testKit = EventSourcedTestKit.of(OrderEntity::new);
 
     var orderId = "123";
-    var skuId1 = "456";
-    var skuId2 = "789";
-    var skuId3 = "012";
+    var stockId1 = "456";
+    var stockId2 = "789";
+    var stockId3 = "012";
     var lineItems = List.of(
-        new Order.LineItem(skuId1, "1000", BigDecimal.valueOf(101), 2, Optional.empty(), Optional.empty()),
-        new Order.LineItem(skuId2, "1000", BigDecimal.valueOf(102), 3, Optional.empty(), Optional.empty()),
-        new Order.LineItem(skuId3, "1000", BigDecimal.valueOf(103), 4, Optional.empty(), Optional.empty()));
+        new Order.LineItem(stockId1, "1000", BigDecimal.valueOf(101), 2, Optional.empty(), Optional.empty()),
+        new Order.LineItem(stockId2, "1000", BigDecimal.valueOf(102), 3, Optional.empty(), Optional.empty()),
+        new Order.LineItem(stockId3, "1000", BigDecimal.valueOf(103), 4, Optional.empty(), Optional.empty()));
     var totalPrice = lineItems.stream()
         .map(item -> item.price().multiply(BigDecimal.valueOf(item.quantity())))
         .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -202,7 +202,7 @@ class OrderEntityTest {
     }
 
     {
-      var command = new Order.Command.OrderItemBackOrdered(orderId, skuId1);
+      var command = new Order.Command.OrderItemBackOrdered(orderId, stockId1);
       var result = testKit.method(OrderEntity::orderItemBackOrdered).invoke(command);
 
       assertTrue(result.isReply());
@@ -212,10 +212,10 @@ class OrderEntityTest {
       {
         var event = result.getNextEventOfType(Order.Event.OrderItemBackOrdered.class);
         assertEquals(orderId, event.orderId());
-        assertEquals(skuId1, event.skuId());
+        assertEquals(stockId1, event.stockId());
 
-        var lineItem = event.lineItems().stream().filter(item -> item.skuId().equals(skuId1)).findFirst().orElseThrow();
-        assertEquals(skuId1, lineItem.skuId());
+        var lineItem = event.lineItems().stream().filter(item -> item.stockId().equals(stockId1)).findFirst().orElseThrow();
+        assertEquals(stockId1, lineItem.stockId());
         assertTrue(lineItem.backOrderedAt().isPresent());
       }
 
@@ -241,13 +241,13 @@ class OrderEntityTest {
     var testKit = EventSourcedTestKit.of(OrderEntity::new);
 
     var orderId = "123";
-    var skuId1 = "456";
-    var skuId2 = "789";
-    var skuId3 = "012";
+    var stockId1 = "456";
+    var stockId2 = "789";
+    var stockId3 = "012";
     var lineItems = List.of(
-        new Order.LineItem(skuId1, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()),
-        new Order.LineItem(skuId2, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()),
-        new Order.LineItem(skuId3, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()));
+        new Order.LineItem(stockId1, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()),
+        new Order.LineItem(stockId2, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()),
+        new Order.LineItem(stockId3, "1000", BigDecimal.valueOf(100), 1, Optional.empty(), Optional.empty()));
     {
       var orderedAt = Instant.now();
       var command = new Order.Command.CreateOrder(orderId, "123", orderedAt, lineItems);
@@ -266,19 +266,19 @@ class OrderEntityTest {
       {
         var event = result.getNextEventOfType(Order.Event.OrderItemCreated.class);
         assertEquals(orderId, event.orderId());
-        assertEquals(lineItems.get(0).skuId(), event.skuId());
+        assertEquals(lineItems.get(0).stockId(), event.stockId());
       }
 
       {
         var event = result.getNextEventOfType(Order.Event.OrderItemCreated.class);
         assertEquals(orderId, event.orderId());
-        assertEquals(lineItems.get(1).skuId(), event.skuId());
+        assertEquals(lineItems.get(1).stockId(), event.stockId());
       }
 
       {
         var event = result.getNextEventOfType(Order.Event.OrderItemCreated.class);
         assertEquals(orderId, event.orderId());
-        assertEquals(lineItems.get(2).skuId(), event.skuId());
+        assertEquals(lineItems.get(2).stockId(), event.stockId());
       }
     }
 
@@ -299,21 +299,21 @@ class OrderEntityTest {
       {
         var event = result.getNextEventOfType(Order.Event.OrderItemCancelled.class);
         assertEquals(orderId, event.orderId());
-        assertEquals(lineItems.get(0).skuId(), event.skuId());
+        assertEquals(lineItems.get(0).stockId(), event.stockId());
         assertTrue(event.cancelledAt().isPresent());
       }
 
       {
         var event = result.getNextEventOfType(Order.Event.OrderItemCancelled.class);
         assertEquals(orderId, event.orderId());
-        assertEquals(lineItems.get(1).skuId(), event.skuId());
+        assertEquals(lineItems.get(1).stockId(), event.stockId());
         assertTrue(event.cancelledAt().isPresent());
       }
 
       {
         var event = result.getNextEventOfType(Order.Event.OrderItemCancelled.class);
         assertEquals(orderId, event.orderId());
-        assertEquals(lineItems.get(2).skuId(), event.skuId());
+        assertEquals(lineItems.get(2).stockId(), event.stockId());
         assertTrue(event.cancelledAt().isPresent());
       }
     }

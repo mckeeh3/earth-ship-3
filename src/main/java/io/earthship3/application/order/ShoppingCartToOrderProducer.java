@@ -30,7 +30,7 @@ public class ShoppingCartToOrderProducer extends Consumer {
     log.info("Event: {}", event);
 
     var lineItems = event.lineItems().stream()
-        .map(item -> new LineItem(item.skuId(), item.skuName(), item.price(), item.quantity()))
+        .map(item -> new LineItem(item.stockId(), item.stockName(), item.price(), item.quantity()))
         .toList();
     var checkedOut = new Event.CheckedOut(event.orderId(), event.customerId(), lineItems);
 

@@ -22,12 +22,12 @@ public class ShoppingCartEntityTest {
     var testKit = EventSourcedTestKit.of(ShoppingCartEntity::new);
 
     var customerId = "123";
-    var skuId = "456";
-    var skuName = "789";
+    var stockId = "456";
+    var stockName = "789";
     var price = BigDecimal.valueOf(100);
     var quantity = 1;
 
-    var command = new Command.AddLineItem(customerId, skuId, skuName, price, quantity);
+    var command = new Command.AddLineItem(customerId, stockId, stockName, price, quantity);
     var result = testKit.method(ShoppingCartEntity::addLineItem).invoke(command);
 
     assertTrue(result.isReply());
@@ -36,14 +36,14 @@ public class ShoppingCartEntityTest {
 
     var event = result.getNextEventOfType(Event.LineItemAdded.class);
     assertEquals(customerId, event.customerId());
-    assertEquals(skuId, event.lineItem().skuId());
-    assertEquals(skuName, event.lineItem().skuName());
+    assertEquals(stockId, event.lineItem().stockId());
+    assertEquals(stockName, event.lineItem().stockName());
     assertEquals(price, event.lineItem().price());
     assertEquals(quantity, event.lineItem().quantity());
 
     var state = testKit.getState();
     assertEquals(customerId, state.customerId());
-    assertEquals(List.of(new ShoppingCart.LineItem(skuId, skuName, price, quantity)), state.lineItems());
+    assertEquals(List.of(new ShoppingCart.LineItem(stockId, stockName, price, quantity)), state.lineItems());
   }
 
   @Test
@@ -59,7 +59,7 @@ public class ShoppingCartEntityTest {
 
     {
       var lineItem = lineItems.get(0);
-      var command = new Command.AddLineItem(customerId, lineItem.skuId(), lineItem.skuName(), lineItem.price(), lineItem.quantity());
+      var command = new Command.AddLineItem(customerId, lineItem.stockId(), lineItem.stockName(), lineItem.price(), lineItem.quantity());
       var result = testKit.method(ShoppingCartEntity::addLineItem).invoke(command);
 
       assertTrue(result.isReply());
@@ -69,7 +69,7 @@ public class ShoppingCartEntityTest {
 
     {
       var lineItem = lineItems.get(1);
-      var command = new Command.AddLineItem(customerId, lineItem.skuId(), lineItem.skuName(), lineItem.price(), lineItem.quantity());
+      var command = new Command.AddLineItem(customerId, lineItem.stockId(), lineItem.stockName(), lineItem.price(), lineItem.quantity());
       var result = testKit.method(ShoppingCartEntity::addLineItem).invoke(command);
 
       assertTrue(result.isReply());
@@ -79,7 +79,7 @@ public class ShoppingCartEntityTest {
 
     {
       var lineItem = lineItems.get(2);
-      var command = new Command.AddLineItem(customerId, lineItem.skuId(), lineItem.skuName(), lineItem.price(), lineItem.quantity());
+      var command = new Command.AddLineItem(customerId, lineItem.stockId(), lineItem.stockName(), lineItem.price(), lineItem.quantity());
       var result = testKit.method(ShoppingCartEntity::addLineItem).invoke(command);
 
       assertTrue(result.isReply());
@@ -88,7 +88,7 @@ public class ShoppingCartEntityTest {
     }
 
     {
-      var command = new Command.UpdateLineItem(customerId, updatedLineItem.skuId(), updatedLineItem.skuName(), updatedLineItem.price(), updatedLineItem.quantity());
+      var command = new Command.UpdateLineItem(customerId, updatedLineItem.stockId(), updatedLineItem.stockName(), updatedLineItem.price(), updatedLineItem.quantity());
       var result = testKit.method(ShoppingCartEntity::updateLineItem).invoke(command);
 
       assertTrue(result.isReply());
@@ -97,8 +97,8 @@ public class ShoppingCartEntityTest {
 
       var event = result.getNextEventOfType(Event.LineItemUpdated.class);
       assertEquals(customerId, event.customerId());
-      assertEquals(updatedLineItem.skuId(), event.lineItem().skuId());
-      assertEquals(updatedLineItem.skuName(), event.lineItem().skuName());
+      assertEquals(updatedLineItem.stockId(), event.lineItem().stockId());
+      assertEquals(updatedLineItem.stockName(), event.lineItem().stockName());
       assertEquals(updatedLineItem.price(), event.lineItem().price());
       assertEquals(updatedLineItem.quantity(), event.lineItem().quantity());
     }
@@ -106,10 +106,10 @@ public class ShoppingCartEntityTest {
     {
       var state = testKit.getState();
       var lineItem = state.lineItems().stream()
-          .filter(item -> item.skuId().equals(updatedLineItem.skuId()))
+          .filter(item -> item.stockId().equals(updatedLineItem.stockId()))
           .findFirst()
           .orElseThrow();
-      assertEquals(updatedLineItem.skuName(), lineItem.skuName());
+      assertEquals(updatedLineItem.stockName(), lineItem.stockName());
       assertEquals(updatedLineItem.price(), lineItem.price());
       assertEquals(updatedLineItem.quantity(), lineItem.quantity());
     }
@@ -127,7 +127,7 @@ public class ShoppingCartEntityTest {
 
     {
       var lineItem = lineItems.get(0);
-      var command = new Command.AddLineItem(customerId, lineItem.skuId(), lineItem.skuName(), lineItem.price(), lineItem.quantity());
+      var command = new Command.AddLineItem(customerId, lineItem.stockId(), lineItem.stockName(), lineItem.price(), lineItem.quantity());
       var result = testKit.method(ShoppingCartEntity::addLineItem).invoke(command);
 
       assertTrue(result.isReply());
@@ -137,7 +137,7 @@ public class ShoppingCartEntityTest {
 
     {
       var lineItem = lineItems.get(1);
-      var command = new Command.AddLineItem(customerId, lineItem.skuId(), lineItem.skuName(), lineItem.price(), lineItem.quantity());
+      var command = new Command.AddLineItem(customerId, lineItem.stockId(), lineItem.stockName(), lineItem.price(), lineItem.quantity());
       var result = testKit.method(ShoppingCartEntity::addLineItem).invoke(command);
 
       assertTrue(result.isReply());
@@ -147,7 +147,7 @@ public class ShoppingCartEntityTest {
 
     {
       var lineItem = lineItems.get(2);
-      var command = new Command.AddLineItem(customerId, lineItem.skuId(), lineItem.skuName(), lineItem.price(), lineItem.quantity());
+      var command = new Command.AddLineItem(customerId, lineItem.stockId(), lineItem.stockName(), lineItem.price(), lineItem.quantity());
       var result = testKit.method(ShoppingCartEntity::addLineItem).invoke(command);
 
       assertTrue(result.isReply());
@@ -157,7 +157,7 @@ public class ShoppingCartEntityTest {
 
     {
       var lineItem = lineItems.get(1);
-      var command = new Command.RemoveLineItem(customerId, lineItem.skuId());
+      var command = new Command.RemoveLineItem(customerId, lineItem.stockId());
       var result = testKit.method(ShoppingCartEntity::removeLineItem).invoke(command);
 
       assertTrue(result.isReply());
@@ -166,7 +166,7 @@ public class ShoppingCartEntityTest {
 
       var event = result.getNextEventOfType(Event.LineItemRemoved.class);
       assertEquals(customerId, event.customerId());
-      assertEquals(lineItem.skuId(), event.skuId());
+      assertEquals(lineItem.stockId(), event.stockId());
     }
 
     {
@@ -188,7 +188,7 @@ public class ShoppingCartEntityTest {
 
     {
       var lineItem = lineItems.get(0);
-      var command = new Command.AddLineItem(customerId, lineItem.skuId(), lineItem.skuName(), lineItem.price(), lineItem.quantity());
+      var command = new Command.AddLineItem(customerId, lineItem.stockId(), lineItem.stockName(), lineItem.price(), lineItem.quantity());
       var result = testKit.method(ShoppingCartEntity::addLineItem).invoke(command);
 
       assertTrue(result.isReply());
@@ -198,7 +198,7 @@ public class ShoppingCartEntityTest {
 
     {
       var lineItem = lineItems.get(1);
-      var command = new Command.AddLineItem(customerId, lineItem.skuId(), lineItem.skuName(), lineItem.price(), lineItem.quantity());
+      var command = new Command.AddLineItem(customerId, lineItem.stockId(), lineItem.stockName(), lineItem.price(), lineItem.quantity());
       var result = testKit.method(ShoppingCartEntity::addLineItem).invoke(command);
 
       assertTrue(result.isReply());
@@ -208,7 +208,7 @@ public class ShoppingCartEntityTest {
 
     {
       var lineItem = lineItems.get(2);
-      var command = new Command.AddLineItem(customerId, lineItem.skuId(), lineItem.skuName(), lineItem.price(), lineItem.quantity());
+      var command = new Command.AddLineItem(customerId, lineItem.stockId(), lineItem.stockName(), lineItem.price(), lineItem.quantity());
       var result = testKit.method(ShoppingCartEntity::addLineItem).invoke(command);
 
       assertTrue(result.isReply());

@@ -11,7 +11,7 @@ import akka.javasdk.eventsourcedentity.EventSourcedEntity;
 import akka.javasdk.eventsourcedentity.EventSourcedEntityContext;
 import io.earthship3.domain.order.Order;
 
-@ComponentId("order")
+@ComponentId("order-entity")
 public class OrderEntity extends EventSourcedEntity<Order.State, Order.Event> {
   private final Logger log = LoggerFactory.getLogger(OrderEntity.class);
   private final String entityId;

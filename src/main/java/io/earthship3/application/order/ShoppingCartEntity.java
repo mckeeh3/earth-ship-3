@@ -14,7 +14,7 @@ import io.earthship3.domain.order.ShoppingCart;
 import io.earthship3.domain.order.ShoppingCart.Event;
 import io.earthship3.domain.order.ShoppingCart.State;
 
-@ComponentId("shopping-cart")
+@ComponentId("shopping-cart-entity")
 public class ShoppingCartEntity extends EventSourcedEntity<ShoppingCart.State, ShoppingCart.Event> {
   private final Logger log = LoggerFactory.getLogger(ShoppingCartEntity.class);
   private final String entityId;
@@ -33,8 +33,8 @@ public class ShoppingCartEntity extends EventSourcedEntity<ShoppingCart.State, S
 
     return Validator
         .isEmpty(command.customerId(), "customerId is required")
-        .isEmpty(command.skuId(), "skuId is required")
-        .isEmpty(command.skuName(), "skuName is required")
+        .isEmpty(command.stockId(), "stockId is required")
+        .isEmpty(command.stockName(), "stockName is required")
         .isLtEqZero(command.quantity(), "quantity must be greater than 0")
         .onSuccess(() -> effects()
             .persistAll(currentState().onCommand(command).stream().toList())
@@ -47,8 +47,8 @@ public class ShoppingCartEntity extends EventSourcedEntity<ShoppingCart.State, S
 
     return Validator
         .isEmpty(command.customerId(), "customerId is required")
-        .isEmpty(command.skuId(), "skuId is required")
-        .isEmpty(command.skuName(), "skuName is required")
+        .isEmpty(command.stockId(), "stockId is required")
+        .isEmpty(command.stockName(), "stockName is required")
         .isLtEqZero(command.price(), "price must be greater than 0.0")
         .isLtEqZero(command.quantity(), "quantity must be greater than 0")
         .onSuccess(() -> effects()
@@ -62,7 +62,7 @@ public class ShoppingCartEntity extends EventSourcedEntity<ShoppingCart.State, S
 
     return Validator
         .isEmpty(command.customerId(), "customerId is required")
-        .isEmpty(command.skuId(), "skuId is required")
+        .isEmpty(command.stockId(), "stockId is required")
         .onSuccess(() -> effects()
             .persistAll(currentState().onCommand(command).stream().toList())
             .thenReply(newState -> done()))

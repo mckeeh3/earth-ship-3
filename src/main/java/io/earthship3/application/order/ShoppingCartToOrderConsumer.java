@@ -34,8 +34,8 @@ public class ShoppingCartToOrderConsumer extends Consumer {
 
     var lineItems = event.lineItems().stream()
         .map(item -> new Order.LineItem(
-            item.skuId(),
-            item.skuName(),
+            item.stockId(),
+            item.stockName(),
             item.price(),
             item.quantity(),
             Optional.empty(),

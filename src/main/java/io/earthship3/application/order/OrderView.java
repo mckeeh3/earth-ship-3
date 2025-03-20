@@ -62,8 +62,8 @@ public class OrderView extends View {
   }
 
   public record LineItem(
-      String skuId,
-      String skuName,
+      String stockId,
+      String stockName,
       double price,
       int quantity,
       Moment readyToShipAt,
@@ -71,8 +71,8 @@ public class OrderView extends View {
 
     static Order.LineItem rowToOrder(LineItem item) {
       return new Order.LineItem(
-          item.skuId(),
-          item.skuName(),
+          item.stockId(),
+          item.stockName(),
           BigDecimal.valueOf(item.price()),
           item.quantity(),
           item.readyToShipAt().optionalInstant(),
@@ -85,8 +85,8 @@ public class OrderView extends View {
 
     static LineItem orderToRow(Order.LineItem item) {
       return new LineItem(
-          item.skuId(),
-          item.skuName(),
+          item.stockId(),
+          item.stockName(),
           item.price().doubleValue(),
           item.quantity(),
           Moment.of(item.readyToShipAt()),
