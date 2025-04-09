@@ -7,16 +7,16 @@ import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public interface StockItems {
+public interface StockItemsBranch {
 
   public record State(
-      String stockItemsId,
+      String branchId,
       String stockId,
       String quantityId,
       int quantity,
-      String parentStockItemsId,
-      List<SubStockItems> branchSubStockItems,
-      List<SubStockItems> leafSubStockItems) {
+      String parentBranchId,
+      List<SubStockItems> subBranches,
+      List<SubStockItems> leaves) {
 
     static final int maxSubBranches = 10;
     static final int maxStockItemsPerLeaf = 20;
@@ -31,10 +31,10 @@ public interface StockItems {
     }
 
     public boolean isTreeTrunk() {
-      return stockId.equals(stockItemsId);
+      return stockId.equals(branchId);
     }
 
-    public List<Event> onCommand(Command.StockItemsAddQuantity command) {
+    public List<Event> onCommand(Command.AddQuantityToTree command) {
       if (!isEmpty() && quantityId.equals(command.quantityId)) {
         return List.of();
       }
@@ -44,8 +44,8 @@ public interface StockItems {
           : delegate(command);
     }
 
-    private List<Event> create(Command.StockItemsAddQuantity command) {
-      var leafQuantities = DistributeQuantity.distributeQuantity(command.quantity, maxStockItemsPerLeaf, maxSubBranches - leafSubStockItems.size());
+    private List<Event> create(Command.AddQuantityToTree command) {
+      var leafQuantities = DistributeQuantity.distributeQuantity(command.quantity, maxStockItemsPerLeaf, maxSubBranches - leaves.size());
       var leftoverQuantity = leafQuantities.leftoverQuantity();
       var branchQuantities = leftoverQuantity > maxLeafStockItemsPerBranch * maxSubBranches
           ? DistributeQuantity.distributeQuantity(leftoverQuantity, maxSubBranches)
@@ -60,22 +60,22 @@ public interface StockItems {
           .toList();
 
       var stockItemsCreated = new Event.StockItemsCreated(
-          command.stockItemsId,
+          command.branchId,
           command.stockId,
           command.quantityId,
           command.quantity,
-          command.parentStockItemsId,
+          command.parentBranchId,
           newBranchSubStockItems,
           newLeafSubStockItems);
 
       var branchEvents = IntStream.range(0, branchQuantities.bucketLevels().size())
           .mapToObj(i -> new SubStockItems(newBranchSubStockItems.get(i).stockItemsId, command.stockId, branchQuantities.bucketLevels().get(i)))
-          .map(s -> new Event.StockItemsBranchToBeAdded(command.stockItemsId, s))
+          .map(s -> new Event.BranchToBeAdded(command.branchId, s))
           .toList();
 
       var leafEvents = IntStream.range(0, leafQuantities.bucketLevels().size())
           .mapToObj(i -> new SubStockItems(newLeafSubStockItems.get(i).stockItemsId, command.stockId, leafQuantities.bucketLevels().get(i)))
-          .map(s -> new Event.StockItemsLeafToBeAdded(command.stockItemsId, s))
+          .map(s -> new Event.LeafToBeAdded(command.branchId, s))
           .toList();
 
       return Stream.of(List.of(stockItemsCreated), branchEvents, leafEvents)
@@ -84,92 +84,92 @@ public interface StockItems {
           .toList();
     }
 
-    private List<Event> delegate(Command.StockItemsAddQuantity command) {
-      var branchSubStockId = branchSubStockItems.get(Math.abs(command.quantityId().hashCode()) % branchSubStockItems.size()).stockItemsId;
-      return List.of(new Event.DelegateToSubStockItems(
-          branchSubStockId,
+    private List<Event> delegate(Command.AddQuantityToTree command) {
+      var subBranchId = subBranches.get(Math.abs(command.quantityId().hashCode()) % subBranches.size()).stockItemsId;
+      return List.of(new Event.DelegateToSubBranch(
+          subBranchId,
           command.stockId,
           command.quantityId,
           command.quantity,
-          command.stockItemsId));
+          branchId));
     }
 
     public State onEvent(Event.StockItemsCreated event) {
       return new State(
-          event.stockItemsId,
+          event.branchId,
           event.stockId,
           event.quantityId,
           event.quantity,
-          event.parentStockItemsId,
-          event.branchSubStockItems,
-          event.leafSubStockItems);
+          event.parentBranchId,
+          event.subBranches,
+          event.leaves);
     }
 
     public Event onCommand(Command.UpdateBranchQuantity command) {
-      var newBranchSubStockItems = branchSubStockItems.stream()
-          .map(s -> s.stockItemsId.equals(command.branchStockItemsId)
+      var newSubBranches = subBranches.stream()
+          .map(s -> s.stockItemsId.equals(command.subBranchId)
               ? new SubStockItems(s.stockItemsId, s.stockId, command.branchQuantity)
               : s)
           .toList();
-      var totalQuantity = newBranchSubStockItems.stream().mapToInt(SubStockItems::quantity).sum()
-          + leafSubStockItems.stream().mapToInt(SubStockItems::quantity).sum();
+      var totalQuantity = newSubBranches.stream().mapToInt(SubStockItems::quantity).sum()
+          + leaves.stream().mapToInt(SubStockItems::quantity).sum();
 
       return new Event.BranchQuantityUpdated(
-          command.stockItemsId,
+          command.branchId,
           totalQuantity,
-          command.branchStockItemsId,
+          command.subBranchId,
           command.branchQuantity,
-          newBranchSubStockItems);
+          newSubBranches);
     }
 
     public Event onCommand(Command.UpdateLeafQuantity command) {
-      var newLeafSubStockItems = leafSubStockItems.stream()
-          .map(s -> s.stockItemsId.equals(command.leafStockItemsId)
+      var newLeaves = leaves.stream()
+          .map(s -> s.stockItemsId.equals(command.leafId)
               ? new SubStockItems(s.stockItemsId, s.stockId, command.leafQuantity)
               : s)
           .toList();
-      var totalQuantity = newLeafSubStockItems.stream().mapToInt(SubStockItems::quantity).sum()
-          + branchSubStockItems.stream().mapToInt(SubStockItems::quantity).sum();
+      var totalQuantity = newLeaves.stream().mapToInt(SubStockItems::quantity).sum()
+          + subBranches.stream().mapToInt(SubStockItems::quantity).sum();
 
       return new Event.LeafQuantityUpdated(
-          command.stockItemsId,
+          command.branchId,
           totalQuantity,
-          command.leafStockItemsId,
+          command.leafId,
           command.leafQuantity,
-          newLeafSubStockItems);
+          newLeaves);
     }
 
     public State onEvent(Event.BranchQuantityUpdated event) {
       return new State(
-          event.stockItemsId,
+          event.branchId,
           stockId,
           quantityId,
           event.totalQuantity,
-          parentStockItemsId,
-          event.branchSubStockItems,
-          leafSubStockItems);
+          parentBranchId,
+          event.subBranches,
+          leaves);
     }
 
     public State onEvent(Event.LeafQuantityUpdated event) {
       return new State(
-          event.stockItemsId,
+          event.branchId,
           stockId,
           quantityId,
           event.totalQuantity,
-          parentStockItemsId,
-          branchSubStockItems,
-          event.leafSubStockItems);
+          parentBranchId,
+          subBranches,
+          event.leaves);
     }
 
-    public State onEvent(Event.StockItemsBranchToBeAdded event) {
+    public State onEvent(Event.BranchToBeAdded event) {
       return this;
     }
 
-    public State onEvent(Event.StockItemsLeafToBeAdded event) {
+    public State onEvent(Event.LeafToBeAdded event) {
       return this;
     }
 
-    public State onEvent(Event.DelegateToSubStockItems event) {
+    public State onEvent(Event.DelegateToSubBranch event) {
       return this;
     }
   }
@@ -180,33 +180,31 @@ public interface StockItems {
       int quantity) {}
 
   public sealed interface Command {
-    record StockItemsAddQuantity(String stockItemsId, String stockId, String quantityId, int quantity, String parentStockItemsId) implements Command {}
+    record AddQuantityToTree(String branchId, String stockId, String quantityId, int quantity, String parentBranchId) implements Command {}
 
-    record AddStockItems(String stockItemsId, SubStockItems subStockItems) implements Command {}
+    record UpdateBranchQuantity(String branchId, String subBranchId, int branchQuantity) implements Command {}
 
-    record UpdateBranchQuantity(String stockItemsId, String branchStockItemsId, int branchQuantity) implements Command {}
-
-    record UpdateLeafQuantity(String stockItemsId, String leafStockItemsId, int leafQuantity) implements Command {}
+    record UpdateLeafQuantity(String branchId, String leafId, int leafQuantity) implements Command {}
   }
 
   public sealed interface Event {
     record StockItemsCreated(
-        String stockItemsId,
+        String branchId,
         String stockId,
         String quantityId,
         int quantity,
-        String parentStockItemsId,
-        List<SubStockItems> branchSubStockItems,
-        List<SubStockItems> leafSubStockItems) implements Event {}
+        String parentBranchId,
+        List<SubStockItems> subBranches,
+        List<SubStockItems> leaves) implements Event {}
 
-    record StockItemsBranchToBeAdded(String parentStockItemsId, SubStockItems subStockItems) implements Event {}
+    record BranchToBeAdded(String parentBranchId, SubStockItems subStockItems) implements Event {}
 
-    record StockItemsLeafToBeAdded(String parentStockItemsId, SubStockItems subStockItems) implements Event {}
+    record LeafToBeAdded(String parentBranchId, SubStockItems subStockItems) implements Event {}
 
-    record DelegateToSubStockItems(String stockItemsId, String stockId, String quantityId, int quantity, String parentStockItemsId) implements Event {}
+    record DelegateToSubBranch(String branchId, String stockId, String quantityId, int quantity, String parentBranchId) implements Event {}
 
-    record BranchQuantityUpdated(String stockItemsId, int totalQuantity, String branchStockItemsId, int branchQuantity, List<SubStockItems> branchSubStockItems) implements Event {}
+    record BranchQuantityUpdated(String branchId, int totalQuantity, String subBranchId, int branchQuantity, List<SubStockItems> subBranches) implements Event {}
 
-    record LeafQuantityUpdated(String stockItemsId, int totalQuantity, String leafStockItemsId, int leafQuantity, List<SubStockItems> leafSubStockItems) implements Event {}
+    record LeafQuantityUpdated(String branchId, int totalQuantity, String leafId, int leafQuantity, List<SubStockItems> leaves) implements Event {}
   }
 }

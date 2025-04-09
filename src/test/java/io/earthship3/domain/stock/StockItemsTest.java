@@ -17,34 +17,34 @@ public class StockItemsTest {
     var quantity = 64;
     var leafEventCount = DistributeQuantity.distributeQuantity(
         quantity,
-        StockItems.State.maxStockItemsPerLeaf,
-        StockItems.State.maxSubBranches - 1);
+        StockItemsBranch.State.maxStockItemsPerLeaf,
+        StockItemsBranch.State.maxSubBranches - 1);
     var branchEventCount = DistributeQuantity.distributeQuantity(
         leafEventCount.leftoverQuantity(),
-        StockItems.State.maxLeafStockItemsPerBranch);
+        StockItemsBranch.State.maxLeafStockItemsPerBranch);
 
-    var command = new StockItems.Command.StockItemsAddQuantity(
+    var command = new StockItemsBranch.Command.AddQuantityToTree(
         stockItemsId,
         stockId,
         quantityId,
         quantity,
         parentStockItemsId);
 
-    var state = StockItems.State.empty();
+    var state = StockItemsBranch.State.empty();
     var events = state.onCommand(command);
 
     // First event should be StockItemsCreated
-    assertTrue(events.get(0) instanceof StockItems.Event.StockItemsCreated);
-    var createdEvent = (StockItems.Event.StockItemsCreated) events.get(0);
-    assertEquals(stockItemsId, createdEvent.stockItemsId());
+    assertTrue(events.get(0) instanceof StockItemsBranch.Event.StockItemsCreated);
+    var createdEvent = (StockItemsBranch.Event.StockItemsCreated) events.get(0);
+    assertEquals(stockItemsId, createdEvent.branchId());
     assertEquals(stockId, createdEvent.stockId());
     assertEquals(quantity, createdEvent.quantity());
-    assertEquals(parentStockItemsId, createdEvent.parentStockItemsId());
+    assertEquals(parentStockItemsId, createdEvent.parentBranchId());
 
     // Should have branch and leaf events
-    assertTrue(events.stream().anyMatch(e -> e instanceof StockItems.Event.StockItemsLeafToBeAdded));
+    assertTrue(events.stream().anyMatch(e -> e instanceof StockItemsBranch.Event.LeafToBeAdded));
     if (branchEventCount.bucketLevels().size() > 0) {
-      assertTrue(events.stream().anyMatch(e -> e instanceof StockItems.Event.StockItemsBranchToBeAdded));
+      assertTrue(events.stream().anyMatch(e -> e instanceof StockItemsBranch.Event.BranchToBeAdded));
     }
   }
 
@@ -56,36 +56,36 @@ public class StockItemsTest {
     var parentStockItemsId = "parent-2";
     var quantity = 450;
 
-    var command = new StockItems.Command.StockItemsAddQuantity(
+    var command = new StockItemsBranch.Command.AddQuantityToTree(
         stockItemsId,
         stockId,
         quantityId,
         quantity,
         parentStockItemsId);
 
-    var state = StockItems.State.empty();
+    var state = StockItemsBranch.State.empty();
     var events = state.onCommand(command);
 
     // First event should be StockItemsCreated
-    assertTrue(events.get(0) instanceof StockItems.Event.StockItemsCreated);
-    var createdEvent = (StockItems.Event.StockItemsCreated) events.get(0);
-    assertEquals(stockItemsId, createdEvent.stockItemsId());
+    assertTrue(events.get(0) instanceof StockItemsBranch.Event.StockItemsCreated);
+    var createdEvent = (StockItemsBranch.Event.StockItemsCreated) events.get(0);
+    assertEquals(stockItemsId, createdEvent.branchId());
     assertEquals(stockId, createdEvent.stockId());
     assertEquals(quantity, createdEvent.quantity());
-    assertEquals(parentStockItemsId, createdEvent.parentStockItemsId());
+    assertEquals(parentStockItemsId, createdEvent.parentBranchId());
 
     // Should have branch and leaf events
-    assertTrue(events.stream().anyMatch(e -> e instanceof StockItems.Event.StockItemsLeafToBeAdded));
-    assertTrue(events.stream().anyMatch(e -> e instanceof StockItems.Event.StockItemsBranchToBeAdded));
+    assertTrue(events.stream().anyMatch(e -> e instanceof StockItemsBranch.Event.LeafToBeAdded));
+    assertTrue(events.stream().anyMatch(e -> e instanceof StockItemsBranch.Event.BranchToBeAdded));
   }
 
   @Test
   void testSubStockItemsLists() {
     var stockId = "stock-1";
     var subStockItems = List.of(
-        new StockItems.SubStockItems("sub-1", stockId, 10),
-        new StockItems.SubStockItems("sub-2", stockId, 20),
-        new StockItems.SubStockItems("sub-3", stockId, 30));
+        new StockItemsBranch.SubStockItems("sub-1", stockId, 10),
+        new StockItemsBranch.SubStockItems("sub-2", stockId, 20),
+        new StockItemsBranch.SubStockItems("sub-3", stockId, 30));
 
     assertEquals(3, subStockItems.size());
     assertEquals(10, subStockItems.get(0).quantity());
