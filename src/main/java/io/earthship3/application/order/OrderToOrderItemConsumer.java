@@ -1,7 +1,8 @@
 package io.earthship3.application.order;
 
 import java.util.Optional;
-import java.util.UUID;
+import static io.earthship3.ShortUUID.randomUUID;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,7 @@ public class OrderToOrderItemConsumer extends Consumer {
   private Effect onEvent(Order.Event.OrderItemCreated event) {
     log.info("Event: {}", event);
 
-    var orderItemId = UUID.randomUUID().toString();
+    var orderItemId = randomUUID();
     var parentOrderItemId = Optional.<String>empty();
     var command = new OrderItem.Command.CreateOrderItem(
         orderItemId,

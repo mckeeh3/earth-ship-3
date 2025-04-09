@@ -1,10 +1,11 @@
 package io.earthship3.domain.order;
 
+import static io.earthship3.ShortUUID.randomUUID;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 public interface OrderItem {
@@ -50,7 +51,7 @@ public interface OrderItem {
       var branches = distributeQuantity(command.quantity(), maxBranches, minUnitsPerBranch);
       var events = branches.stream()
           .map(branchQuantity -> {
-            var subOrderItemId = UUID.randomUUID().toString();
+            var subOrderItemId = randomUUID();
             var subOrderItemParentOrderItemId = Optional.of(command.orderItemId());
             return branchQuantity <= minUnitsPerBranch * 2
                 ? new Event.OrderStockItemsToBeCreated(

@@ -1,8 +1,9 @@
 package io.earthship3.domain.map;
 
+import static io.earthship3.ShortUUID.randomUUID;
+
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 public interface GeoOrderGenerator {
   public record State(
@@ -40,7 +41,7 @@ public interface GeoOrderGenerator {
           command.generatorId(),
           command.position(),
           command.radiusKm(),
-          UUID.randomUUID().toString(),
+          randomUUID(),
           1,
           1);
 
@@ -58,7 +59,7 @@ public interface GeoOrderGenerator {
       var elapsedMs = now.toEpochMilli() - startTime.toEpochMilli();
       var expectedGeoOrders = Math.max(geoOrdersGenerated, (int) ((elapsedMs / 1000.0) * ratePerSecond));
       var geoOrdersToBeGenerated = Math.min(expectedGeoOrders - geoOrdersGenerated, geoOrdersToGenerate - geoOrdersGenerated);
-      var geoOrderId = UUID.randomUUID().toString();
+      var geoOrderId = randomUUID();
 
       var geoOrdersToBeGeneratedEvent = new Event.GeoOrdersToBeGenerated(
           command.generatorId(),

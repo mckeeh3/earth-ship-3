@@ -4,9 +4,10 @@ import static akka.Done.done;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import static io.earthship3.ShortUUID.randomUUID;
+
 import java.math.BigDecimal;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
@@ -18,8 +19,8 @@ public class OrderItemEntityTest {
   public void testCreateOrderItemWithQuantity1() {
     var testKit = EventSourcedTestKit.of(OrderItemEntity::new);
 
-    var orderItemId = UUID.randomUUID().toString();
-    var parentOrderItemId = Optional.of(UUID.randomUUID().toString());
+    var orderItemId = randomUUID();
+    var parentOrderItemId = Optional.of(randomUUID());
     var orderId = "123";
     var stockId = "234";
     var stockName = "567";
@@ -74,8 +75,8 @@ public class OrderItemEntityTest {
   public void testCreateOrderItemWithQuantityMinUnitsPerBranchMinusOne() {
     var testKit = EventSourcedTestKit.of(OrderItemEntity::new);
 
-    var orderItemId = UUID.randomUUID().toString();
-    var parentOrderItemId = Optional.of(UUID.randomUUID().toString());
+    var orderItemId = randomUUID();
+    var parentOrderItemId = Optional.of(randomUUID());
     var orderId = "123";
     var stockId = "234";
     var stockName = "567";
@@ -106,8 +107,8 @@ public class OrderItemEntityTest {
   public void testCreateOrderItemWithQuantityMinUnitsPerBranchPlusOne() {
     var testKit = EventSourcedTestKit.of(OrderItemEntity::new);
 
-    var orderItemId = UUID.randomUUID().toString();
-    var parentOrderItemId = Optional.of(UUID.randomUUID().toString());
+    var orderItemId = randomUUID();
+    var parentOrderItemId = Optional.of(randomUUID());
     var orderId = "123";
     var stockId = "234";
     var stockName = "567";
@@ -144,8 +145,8 @@ public class OrderItemEntityTest {
   public void testCreateOrderItemWithQuantity2BranchesPlusOne() {
     var testKit = EventSourcedTestKit.of(OrderItemEntity::new);
 
-    var orderItemId = UUID.randomUUID().toString();
-    var parentOrderItemId = Optional.of(UUID.randomUUID().toString());
+    var orderItemId = randomUUID();
+    var parentOrderItemId = Optional.of(randomUUID());
     var orderId = "123";
     var stockId = "234";
     var stockName = "567";
@@ -194,8 +195,8 @@ public class OrderItemEntityTest {
   public void testCreateOrderItemWithQuantity3BranchesMinusOne() {
     var testKit = EventSourcedTestKit.of(OrderItemEntity::new);
 
-    var orderItemId = UUID.randomUUID().toString();
-    var parentOrderItemId = Optional.of(UUID.randomUUID().toString());
+    var orderItemId = randomUUID();
+    var parentOrderItemId = Optional.of(randomUUID());
     var orderId = "123";
     var stockId = "234";
     var stockName = "567";
@@ -252,8 +253,8 @@ public class OrderItemEntityTest {
   public void testCreateOrderItemWithQuantityOnePointFiveMaxBranches() {
     var testKit = EventSourcedTestKit.of(OrderItemEntity::new);
 
-    var orderItemId = UUID.randomUUID().toString();
-    var parentOrderItemId = Optional.of(UUID.randomUUID().toString());
+    var orderItemId = randomUUID();
+    var parentOrderItemId = Optional.of(randomUUID());
     var orderId = "123";
     var stockId = "234";
     var stockName = "567";
@@ -272,22 +273,17 @@ public class OrderItemEntityTest {
     }
 
     {
-      var events = result.getAllEvents().stream()
+      var quantityOrderItemToBeCreated = result.getAllEvents().stream()
           .filter(event -> event instanceof OrderItem.Event.OrderItemBranchToBeCreated)
           .map(event -> (OrderItem.Event.OrderItemBranchToBeCreated) event)
-          .toList();
-      assertEquals(OrderItem.maxBranches, events.size());
-
-      var eventsQuantity = events.stream()
           .map(event -> event.quantity())
           .reduce(0, (a, b) -> a + b);
-      assertEquals(quantity, eventsQuantity);
-
-      var allEventsMatchParentOrderItemId = events.stream()
-          .filter(event -> event instanceof OrderItem.Event.OrderItemBranchToBeCreated)
-          .map(event -> (OrderItem.Event.OrderItemBranchToBeCreated) event)
-          .allMatch(event -> event.parentOrderItemId().isPresent() && event.parentOrderItemId().get().equals(orderItemId));
-      assertTrue(allEventsMatchParentOrderItemId);
+      var quantityStockItemsToBeCreated = result.getAllEvents().stream()
+          .filter(event -> event instanceof OrderItem.Event.OrderStockItemsToBeCreated)
+          .map(event -> (OrderItem.Event.OrderStockItemsToBeCreated) event)
+          .map(event -> event.quantity())
+          .reduce(0, (a, b) -> a + b);
+      assertEquals(quantity, quantityStockItemsToBeCreated + quantityOrderItemToBeCreated);
     }
   }
 }

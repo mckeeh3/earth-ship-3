@@ -1,5 +1,7 @@
 package io.earthship3.domain.map;
 
+import static io.earthship3.ShortUUID.randomUUID;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -65,7 +67,8 @@ public interface GeoOrder {
       var event = new Event.GeoOrderCreated(order, geoOrderPosition);
 
       var count = command.geoOrdersToBeCreated() - 1;
-      var events = count > 1
+
+      return count > 1
           ? List.<Event>of(
               event,
               new Event.GeoOrdersToBeCreated(command.orderId(), command.generatorPosition(), command.generatorRadiusKm(), count / 2),
@@ -75,8 +78,6 @@ public interface GeoOrder {
                   event,
                   new Event.GeoOrdersToBeCreated(command.orderId(), command.generatorPosition(), command.generatorRadiusKm(), count))
               : List.<Event>of(event);
-
-      return events;
     }
 
     public State onEvent(Event.GeoOrderCreated event) {
@@ -103,7 +104,7 @@ public interface GeoOrder {
     }
 
     static Order.State createOrder(String orderId) {
-      var customerId = java.util.UUID.randomUUID().toString();
+      var customerId = randomUUID();
       var lineItems = Stream.generate(() -> {
         var productId = String.format("P%04d", random.nextInt(1, 31));
         var quantity = random.nextInt(1, 6);

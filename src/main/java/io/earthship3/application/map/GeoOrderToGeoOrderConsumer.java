@@ -1,6 +1,6 @@
 package io.earthship3.application.map;
 
-import java.util.UUID;
+import static io.earthship3.ShortUUID.randomUUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ public class GeoOrderToGeoOrderConsumer extends Consumer {
   private Effect onEvent(GeoOrder.Event.GeoOrdersToBeCreated event) {
     log.info("Event: {}", event);
 
-    var orderId = UUID.randomUUID().toString();
+    var orderId = randomUUID();
     var generatorPosition = event.generatorPosition();
     var generatorRadiusKm = event.generatorRadiusKm();
     var geoOrdersToBeCreated = event.geoOrdersToBeCreated();

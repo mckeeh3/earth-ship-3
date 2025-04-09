@@ -1,10 +1,11 @@
 package io.earthship3.domain.order;
 
+import static io.earthship3.ShortUUID.randomUUID;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public interface ShoppingCart {
 
@@ -83,7 +84,7 @@ public interface ShoppingCart {
         return Optional.empty();
       }
 
-      var orderId = UUID.randomUUID().toString();
+      var orderId = randomUUID();
       return Optional.of(new Event.CheckedOut(command.customerId(), Instant.now(), orderId, List.copyOf(lineItems)));
     }
 

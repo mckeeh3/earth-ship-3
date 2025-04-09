@@ -1,9 +1,10 @@
 package io.earthship3.domain.order;
 
+import static io.earthship3.ShortUUID.randomUUID;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 public interface OrderStockItems {
@@ -30,7 +31,7 @@ public interface OrderStockItems {
         return List.of();
       }
 
-      var orderStockItems = Stream.generate(() -> UUID.randomUUID().toString())
+      var orderStockItems = Stream.generate(() -> randomUUID())
           .limit(command.quantity())
           .map(id -> new OrderStockItem(
               id,
