@@ -3,7 +3,6 @@ package io.earthship3.application.order;
 import java.util.Optional;
 import static io.earthship3.ShortUUID.randomUUID;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,7 +11,7 @@ import akka.javasdk.annotations.Consume;
 import akka.javasdk.client.ComponentClient;
 import akka.javasdk.consumer.Consumer;
 import io.earthship3.domain.order.Order;
-import io.earthship3.domain.order.OrderItem;
+import io.earthship3.domain.order.OrderItemBranch;
 
 @ComponentId("order-to-order-item-consumer")
 @Consume.FromEventSourcedEntity(OrderEntity.class)
@@ -36,7 +35,7 @@ public class OrderToOrderItemConsumer extends Consumer {
 
     var orderItemId = randomUUID();
     var parentOrderItemId = Optional.<String>empty();
-    var command = new OrderItem.Command.CreateOrderItem(
+    var command = new OrderItemBranch.Command.CreateBranch(
         orderItemId,
         parentOrderItemId,
         event.orderId(),
@@ -45,7 +44,7 @@ public class OrderToOrderItemConsumer extends Consumer {
         event.lineItem().price(),
         event.lineItem().quantity());
     var done = componentClient.forEventSourcedEntity(event.orderId())
-        .method(OrderItemEntity::createOrderItem)
+        .method(OrderItemBranchEntity::createBranch)
         .invokeAsync(command);
 
     return effects().asyncDone(done);

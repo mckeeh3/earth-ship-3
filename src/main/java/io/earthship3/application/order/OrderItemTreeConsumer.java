@@ -7,11 +7,11 @@ import akka.javasdk.annotations.ComponentId;
 import akka.javasdk.annotations.Consume;
 import akka.javasdk.client.ComponentClient;
 import akka.javasdk.consumer.Consumer;
-import io.earthship3.domain.order.OrderItem;
-import io.earthship3.domain.order.OrderStockItems;
+import io.earthship3.domain.order.OrderItemBranch;
+import io.earthship3.domain.order.OrderItemsLeaf;
 
 @ComponentId("order-item-tree-consumer")
-@Consume.FromEventSourcedEntity(OrderItemEntity.class)
+@Consume.FromEventSourcedEntity(OrderItemBranchEntity.class)
 public class OrderItemTreeConsumer extends Consumer {
   private final Logger log = LoggerFactory.getLogger(OrderItemTreeConsumer.class);
   private final ComponentClient componentClient;
@@ -20,43 +20,43 @@ public class OrderItemTreeConsumer extends Consumer {
     this.componentClient = componentClient;
   }
 
-  public Effect onEvent(OrderItem.Event event) {
+  public Effect onEvent(OrderItemBranch.Event event) {
     return switch (event) {
-      case OrderItem.Event.OrderItemBranchToBeCreated e -> onEvent(e);
-      case OrderItem.Event.OrderStockItemsToBeCreated e -> onEvent(e);
+      case OrderItemBranch.Event.BranchToBeCreated e -> onEvent(e);
+      case OrderItemBranch.Event.LeafToBeCreated e -> onEvent(e);
       default -> effects().ignore();
     };
   }
 
-  private Effect onEvent(OrderItem.Event.OrderItemBranchToBeCreated event) {
+  private Effect onEvent(OrderItemBranch.Event.BranchToBeCreated event) {
     log.info("Event: {}", event);
 
-    var command = new OrderItem.Command.CreateOrderItem(
-        event.orderItemId(),
-        event.parentOrderItemId(),
+    var command = new OrderItemBranch.Command.CreateBranch(
+        event.branchId(),
+        event.parentBranchId(),
         event.orderId(),
         event.stockId(),
         event.stockName(),
         event.price(),
         event.quantity());
-    var done = componentClient.forEventSourcedEntity(event.orderItemId())
-        .method(OrderItemEntity::createOrderItem)
+    var done = componentClient.forEventSourcedEntity(event.branchId())
+        .method(OrderItemBranchEntity::createBranch)
         .invokeAsync(command);
 
     return effects().asyncDone(done);
   }
 
-  private Effect onEvent(OrderItem.Event.OrderStockItemsToBeCreated event) {
+  private Effect onEvent(OrderItemBranch.Event.LeafToBeCreated event) {
     log.info("Event: {}", event);
 
-    var command = new OrderStockItems.Command.CreateOrderStockItems(
-        event.orderStockItemId(),
-        event.parentOrderItemId(),
+    var command = new OrderItemsLeaf.Command.CreateLeaf(
+        event.branchId(),
+        event.parentBranchId(),
         event.orderId(),
         event.stockId(),
         event.quantity());
-    var done = componentClient.forEventSourcedEntity(event.orderStockItemId())
-        .method(OrderStockItemsEntity::createOrderStockItems)
+    var done = componentClient.forEventSourcedEntity(event.branchId())
+        .method(OrderItemsLeafEntity::createLeaf)
         .invokeAsync(command);
 
     return effects().asyncDone(done);

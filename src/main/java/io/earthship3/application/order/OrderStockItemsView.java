@@ -10,7 +10,7 @@ import akka.javasdk.annotations.Consume;
 import akka.javasdk.annotations.Query;
 import akka.javasdk.view.TableUpdater;
 import akka.javasdk.view.View;
-import io.earthship3.domain.order.OrderStockItems;
+import io.earthship3.domain.order.OrderItemsLeaf;
 
 @ComponentId("order-stock-items-view")
 public class OrderStockItemsView extends View {
@@ -51,7 +51,7 @@ public class OrderStockItemsView extends View {
     return queryResult();
   }
 
-  @Consume.FromEventSourcedEntity(OrderStockItemsEntity.class)
+  @Consume.FromEventSourcedEntity(OrderItemsLeafEntity.class)
   public static class OrderStockItemsConsumer extends TableUpdater<OrderStockItemRow> {
     private final Logger log = LoggerFactory.getLogger(OrderStockItemsConsumer.class);
 
@@ -60,7 +60,7 @@ public class OrderStockItemsView extends View {
       return new OrderStockItemRow(null, null, false, false);
     }
 
-    public Effect<OrderStockItemRow> onEvent(OrderStockItems.Event event) {
+    public Effect<OrderStockItemRow> onEvent(OrderItemsLeaf.Event event) {
       log.info("{}", event);
       return effects().updateRow(OrderStockItemRow.eventToRow(rowState(), event));
     }
@@ -74,10 +74,10 @@ public class OrderStockItemsView extends View {
       boolean readyToShip,
       boolean backOrdered) {
 
-    static OrderStockItemRow eventToRow(OrderStockItemRow row, OrderStockItems.Event event) {
+    static OrderStockItemRow eventToRow(OrderStockItemRow row, OrderItemsLeaf.Event event) {
 
       return switch (event) {
-        case OrderStockItems.Event.OrderStockItemsCreated e -> new OrderStockItemRow(e.orderStockItemId(), e.stockId(), false, false);
+        case OrderItemsLeaf.Event.LeafCreated e -> new OrderStockItemRow(e.leafId(), e.stockId(), false, false);
         default -> row;
       };
     }

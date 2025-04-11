@@ -4,26 +4,29 @@ import static io.earthship3.ShortUUID.randomUUID;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import io.earthship3.DistributeQuantity;
 
 public interface StockItemsBranch {
 
   public record State(
       String branchId,
+      Optional<String> parentBranchId,
       String stockId,
       String quantityId,
       int quantity,
-      String parentBranchId,
       List<SubStockItems> subBranches,
       List<SubStockItems> leaves) {
 
     static final int maxSubBranches = 10;
     static final int maxStockItemsPerLeaf = 20;
-    static final int maxLeafStockItemsPerBranch = maxStockItemsPerLeaf * maxSubBranches;
+    static final int maxStockItemsPerBranch = maxStockItemsPerLeaf * maxSubBranches;
 
     public static State empty() {
-      return new State(null, null, null, 0, null, List.of(), List.of());
+      return new State(null, Optional.empty(), null, null, 0, List.of(), List.of());
     }
 
     public boolean isEmpty() {
@@ -31,7 +34,7 @@ public interface StockItemsBranch {
     }
 
     public boolean isTreeTrunk() {
-      return stockId.equals(branchId);
+      return parentBranchId.isEmpty();
     }
 
     public List<Event> onCommand(Command.AddQuantityToTree command) {
@@ -45,11 +48,9 @@ public interface StockItemsBranch {
     }
 
     private List<Event> create(Command.AddQuantityToTree command) {
-      var leafQuantities = DistributeQuantity.distributeQuantity(command.quantity, maxStockItemsPerLeaf, maxSubBranches - leaves.size());
+      var leafQuantities = DistributeQuantity.distributeAllowLeftover(command.quantity, maxStockItemsPerLeaf, maxSubBranches);
       var leftoverQuantity = leafQuantities.leftoverQuantity();
-      var branchQuantities = leftoverQuantity > maxLeafStockItemsPerBranch * maxSubBranches
-          ? DistributeQuantity.distributeQuantity(leftoverQuantity, maxSubBranches)
-          : DistributeQuantity.distributeQuantity(leftoverQuantity, maxLeafStockItemsPerBranch, maxSubBranches);
+      var branchQuantities = DistributeQuantity.distributeWithoutLeftover(leftoverQuantity, maxStockItemsPerBranch, maxSubBranches);
 
       var newBranchSubStockItems = Stream.generate(() -> new SubStockItems(randomUUID(), command.stockId, 0))
           .limit(maxSubBranches)
@@ -87,20 +88,20 @@ public interface StockItemsBranch {
     private List<Event> delegate(Command.AddQuantityToTree command) {
       var subBranchId = subBranches.get(Math.abs(command.quantityId().hashCode()) % subBranches.size()).stockItemsId;
       return List.of(new Event.DelegateToSubBranch(
+          branchId,
           subBranchId,
           command.stockId,
           command.quantityId,
-          command.quantity,
-          branchId));
+          command.quantity));
     }
 
     public State onEvent(Event.StockItemsCreated event) {
       return new State(
           event.branchId,
+          Optional.ofNullable(event.parentBranchId),
           event.stockId,
           event.quantityId,
           event.quantity,
-          event.parentBranchId,
           event.subBranches,
           event.leaves);
     }
@@ -116,6 +117,7 @@ public interface StockItemsBranch {
 
       return new Event.BranchQuantityUpdated(
           command.branchId,
+          parentBranchId,
           totalQuantity,
           command.subBranchId,
           command.branchQuantity,
@@ -133,6 +135,7 @@ public interface StockItemsBranch {
 
       return new Event.LeafQuantityUpdated(
           command.branchId,
+          parentBranchId,
           totalQuantity,
           command.leafId,
           command.leafQuantity,
@@ -142,10 +145,10 @@ public interface StockItemsBranch {
     public State onEvent(Event.BranchQuantityUpdated event) {
       return new State(
           event.branchId,
+          event.parentBranchId,
           stockId,
           quantityId,
           event.totalQuantity,
-          parentBranchId,
           event.subBranches,
           leaves);
     }
@@ -153,10 +156,10 @@ public interface StockItemsBranch {
     public State onEvent(Event.LeafQuantityUpdated event) {
       return new State(
           event.branchId,
+          event.parentBranchId,
           stockId,
           quantityId,
           event.totalQuantity,
-          parentBranchId,
           subBranches,
           event.leaves);
     }
@@ -201,10 +204,10 @@ public interface StockItemsBranch {
 
     record LeafToBeAdded(String parentBranchId, SubStockItems subStockItems) implements Event {}
 
-    record DelegateToSubBranch(String branchId, String stockId, String quantityId, int quantity, String parentBranchId) implements Event {}
+    record DelegateToSubBranch(String branchId, String subBranchId, String stockId, String quantityId, int quantity) implements Event {}
 
-    record BranchQuantityUpdated(String branchId, int totalQuantity, String subBranchId, int branchQuantity, List<SubStockItems> subBranches) implements Event {}
+    record BranchQuantityUpdated(String branchId, Optional<String> parentBranchId, int totalQuantity, String subBranchId, int branchQuantity, List<SubStockItems> subBranches) implements Event {}
 
-    record LeafQuantityUpdated(String branchId, int totalQuantity, String leafId, int leafQuantity, List<SubStockItems> leaves) implements Event {}
+    record LeafQuantityUpdated(String branchId, Optional<String> parentBranchId, int totalQuantity, String leafId, int leafQuantity, List<SubStockItems> leaves) implements Event {}
   }
 }

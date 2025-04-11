@@ -1,22 +1,35 @@
-package io.earthship3.domain.stock;
+package io.earthship3;
 
 import java.util.List;
 import java.util.Scanner;
 import java.util.stream.IntStream;
 
-class DistributeQuantity {
+public class DistributeQuantity {
+
+  public static QuantityDistribution distributeAllowLeftover(int quantity, int bucketLimit, int availableBuckets) {
+    return distributeQuantity(quantity, bucketLimit, availableBuckets);
+  }
+
+  public static QuantityDistribution distributeWithoutLeftover(int quantity, int bucketLimit, int availableBuckets) {
+    return quantity > bucketLimit * availableBuckets
+        ? distributeQuantity(quantity, availableBuckets)
+        : distributeQuantity(quantity, bucketLimit, availableBuckets);
+  }
 
   /**
-   * Distributes quantity into buckets according to the following rules: 1. Use the least number of buckets possible 2.
-   * When Q > L * B, fill all buckets to limit L, and return remaining quantity Q1 = Q - L * B 3. When Q <= L * B,
-   * distribute quantity as evenly as possible across buckets using integer math
+   * Distributes quantity into buckets according to the following rules:
+   * <ol>
+   * <li>Use the least number of buckets possible</li>
+   * <li>When Q > L * B, fill all buckets to limit L, and return remaining quantity Q1 = Q - L * B</li>
+   * <li>When Q <= L * B, distribute quantity as evenly as possible across buckets using integer math</li>
+   * </ol>
    *
    * @param quantity         The quantity of quantity to distribute
    * @param bucketLimit      The maximum capacity of each bucket
    * @param availableBuckets The total number of buckets available
    * @return A DistributionResult containing the quantity distribution and any remaining quantity
    */
-  static QuantityDistribution distributeQuantity(int quantity, int bucketLimit, int availableBuckets) {
+  private static QuantityDistribution distributeQuantity(int quantity, int bucketLimit, int availableBuckets) {
     // Validate inputs
     if (quantity < 0 || bucketLimit <= 0 || availableBuckets <= 0) {
       throw new IllegalArgumentException("Invalid input parameters");
@@ -54,13 +67,13 @@ class DistributeQuantity {
   }
 
   /**
-   * Distributes quantity into buckets with no limit
+   * Distributes quantity into buckets with no bucket quantity limit
    *
    * @param quantity         The quantity of quantity to distribute
    * @param availableBuckets The total number of buckets available
    * @return A DistributionResult containing the quantity distribution and any remaining quantity
    */
-  static QuantityDistribution distributeQuantity(int quantity, int availableBuckets) {
+  private static QuantityDistribution distributeQuantity(int quantity, int availableBuckets) {
     if (quantity == 0) {
       return new QuantityDistribution(List.of(), 0);
     }
@@ -75,7 +88,7 @@ class DistributeQuantity {
     return new QuantityDistribution(bucketLevels, 0);
   }
 
-  record QuantityDistribution(List<Integer> bucketLevels, int leftoverQuantity) {}
+  public record QuantityDistribution(List<Integer> bucketLevels, int leftoverQuantity) {}
 
   private static final Scanner scanner = new Scanner(System.in);
 

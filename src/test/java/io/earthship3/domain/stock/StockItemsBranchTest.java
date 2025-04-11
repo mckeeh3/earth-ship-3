@@ -2,11 +2,13 @@ package io.earthship3.domain.stock;
 
 import org.junit.jupiter.api.Test;
 
+import io.earthship3.DistributeQuantity;
+
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class StockItemsTest {
+public class StockItemsBranchTest {
 
   @Test
   void testStockItemsAddQuantity() {
@@ -15,13 +17,14 @@ public class StockItemsTest {
     var quantityId = "quantity-1";
     var parentStockItemsId = "parent-1";
     var quantity = 64;
-    var leafEventCount = DistributeQuantity.distributeQuantity(
+    var leafEventCount = DistributeQuantity.distributeAllowLeftover(
         quantity,
         StockItemsBranch.State.maxStockItemsPerLeaf,
-        StockItemsBranch.State.maxSubBranches - 1);
-    var branchEventCount = DistributeQuantity.distributeQuantity(
+        StockItemsBranch.State.maxSubBranches);
+    var branchEventCount = DistributeQuantity.distributeWithoutLeftover(
         leafEventCount.leftoverQuantity(),
-        StockItemsBranch.State.maxLeafStockItemsPerBranch);
+        StockItemsBranch.State.maxStockItemsPerBranch,
+        StockItemsBranch.State.maxSubBranches);
 
     var command = new StockItemsBranch.Command.AddQuantityToTree(
         stockItemsId,

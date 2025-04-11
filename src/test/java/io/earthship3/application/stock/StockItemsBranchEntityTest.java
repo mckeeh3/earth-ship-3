@@ -1,11 +1,12 @@
 package io.earthship3.application.stock;
 
-import static io.earthship3.ShortUUID.randomUUID;
-
 import static akka.Done.done;
+import static io.earthship3.ShortUUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +48,7 @@ public class StockItemsBranchEntityTest {
       assertEquals(stockId, state.stockId());
       assertEquals(quantityId, state.quantityId());
       assertEquals(quantity, state.quantity());
-      assertEquals(parentBranchId, state.parentBranchId());
+      assertEquals(Optional.of(parentBranchId), state.parentBranchId());
       assertTrue(state.subBranches().size() > 0);
       assertTrue(state.leaves().size() > 0);
     }
@@ -192,7 +193,7 @@ public class StockItemsBranchEntityTest {
       assertEquals(stockId, state.stockId());
       assertEquals(quantityId, state.quantityId());
       assertEquals(quantity, state.quantity());
-      assertEquals(parentBranchId, state.parentBranchId());
+      assertEquals(Optional.of(parentBranchId), state.parentBranchId());
     }
 
     {
@@ -211,7 +212,7 @@ public class StockItemsBranchEntityTest {
       assertEquals(stockId, state.stockId());
       assertEquals(quantityId, state.quantityId());
       assertEquals(quantity, state.quantity());
-      assertEquals(parentBranchId, state.parentBranchId());
+      assertEquals(Optional.of(parentBranchId), state.parentBranchId());
     }
   }
 
@@ -262,6 +263,7 @@ public class StockItemsBranchEntityTest {
     var initialBranchQuantity = currentState.subBranches().get(0).quantity();
     var initialLeafQuantity = currentState.leaves().get(0).quantity();
 
+    // Then update branch quantity
     var updateBranchCommand = new StockItemsBranch.Command.UpdateBranchQuantity(
         branchId,
         currentState.subBranches().get(0).stockItemsId(),
@@ -270,6 +272,17 @@ public class StockItemsBranchEntityTest {
     assertTrue(updateBranchResult.isReply());
     assertEquals(done(), updateBranchResult.getReply());
 
+    {
+      var event = updateBranchResult.getNextEventOfType(StockItemsBranch.Event.BranchQuantityUpdated.class);
+      assertNotNull(event);
+      assertEquals(branchId, event.branchId());
+      assertEquals(Optional.of(parentBranchId), event.parentBranchId());
+      assertEquals(initialQuantity - initialBranchQuantity, event.totalQuantity());
+      assertEquals(currentState.subBranches().get(0).stockItemsId(), event.subBranchId());
+      assertEquals(0, event.branchQuantity());
+    }
+
+    // Then update leaf quantity
     var updateLeafCommand = new StockItemsBranch.Command.UpdateLeafQuantity(
         branchId,
         currentState.leaves().get(0).stockItemsId(),
@@ -277,6 +290,16 @@ public class StockItemsBranchEntityTest {
     var updateLeafResult = testKit.method(StockItemsBranchEntity::updateLeafQuantity).invoke(updateLeafCommand);
     assertTrue(updateLeafResult.isReply());
     assertEquals(done(), updateLeafResult.getReply());
+
+    {
+      var event = updateLeafResult.getNextEventOfType(StockItemsBranch.Event.LeafQuantityUpdated.class);
+      assertNotNull(event);
+      assertEquals(branchId, event.branchId());
+      assertEquals(Optional.of(parentBranchId), event.parentBranchId());
+      assertEquals(initialQuantity - initialBranchQuantity - initialLeafQuantity, event.totalQuantity());
+      assertEquals(currentState.leaves().get(0).stockItemsId(), event.leafId());
+      assertEquals(0, event.leafQuantity());
+    }
 
     var newState = testKit.getState();
     var newQuantity = newState.quantity();
@@ -321,13 +344,13 @@ public class StockItemsBranchEntityTest {
       var delegateEvent = result.getNextEventOfType(StockItemsBranch.Event.DelegateToSubBranch.class);
       assertNotNull(delegateEvent);
       var matchingBranch = state.subBranches().stream()
-          .filter(b -> b.stockItemsId().equals(delegateEvent.branchId()))
+          .filter(b -> b.stockItemsId().equals(delegateEvent.subBranchId()))
           .findFirst();
       assertTrue(matchingBranch.isPresent());
       assertEquals(stockId, delegateEvent.stockId());
       assertEquals(quantityId, delegateEvent.quantityId());
       assertEquals(quantity, delegateEvent.quantity());
-      assertEquals(state.branchId(), delegateEvent.parentBranchId());
+      assertEquals(state.branchId(), delegateEvent.branchId());
     }
 
     // Verify final state
