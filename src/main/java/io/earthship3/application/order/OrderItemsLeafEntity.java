@@ -25,7 +25,31 @@ public class OrderItemsLeafEntity extends EventSourcedEntity<OrderItemsLeaf.Stat
     return OrderItemsLeaf.State.empty();
   }
 
-  public Effect<Done> createLeaf(OrderItemsLeaf.Command.CreateLeaf command) {
+  public Effect<Done> createLeaf(OrderItemsLeaf.Command.CreateOrderItems command) {
+    log.info("EntityId: {}\n_State: {}\n_Command: {}", entityId, currentState(), command);
+
+    return effects()
+        .persistAll(currentState().onCommand(command))
+        .thenReply(newState -> done());
+  }
+
+  public Effect<Done> requestAllocation(OrderItemsLeaf.Command.AllocateOrderItemsToStockItems command) {
+    log.info("EntityId: {}\n_State: {}\n_Command: {}", entityId, currentState(), command);
+
+    return effects()
+        .persistAll(currentState().onCommand(command))
+        .thenReply(newState -> done());
+  }
+
+  public Effect<Done> releaseAllocation(OrderItemsLeaf.Command.ReleaseStockItemsAllocation command) {
+    log.info("EntityId: {}\n_State: {}\n_Command: {}", entityId, currentState(), command);
+
+    return effects()
+        .persistAll(currentState().onCommand(command))
+        .thenReply(newState -> done());
+  }
+
+  public Effect<Done> setToBackOrdered(OrderItemsLeaf.Command.SetBackOrdered command) {
     log.info("EntityId: {}\n_State: {}\n_Command: {}", entityId, currentState(), command);
 
     return effects()
@@ -42,9 +66,12 @@ public class OrderItemsLeafEntity extends EventSourcedEntity<OrderItemsLeaf.Stat
     log.info("EntityId: {}\n_State: {}\n_Event: {}", entityId, currentState(), event);
 
     return switch (event) {
-      case OrderItemsLeaf.Event.LeafCreated e -> currentState().onEvent(e);
+      case OrderItemsLeaf.Event.OrderItemsCreated e -> currentState().onEvent(e);
       case OrderItemsLeaf.Event.LeafQuantityUpdated e -> currentState().onEvent(e);
-      case OrderItemsLeaf.Event.LeafNeedsStockItems e -> currentState().onEvent(e);
+      case OrderItemsLeaf.Event.OrderItemsNeedStockItems e -> currentState().onEvent(e);
+      case OrderItemsLeaf.Event.OrderItemsAllocatedToStockItems e -> currentState().onEvent(e);
+      case OrderItemsLeaf.Event.OrderItemsAllocationConflictDetected e -> currentState().onEvent(e);
+      case OrderItemsLeaf.Event.BackOrderedSet e -> currentState().onEvent(e);
     };
   }
 }

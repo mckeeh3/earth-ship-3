@@ -49,7 +49,7 @@ public class OrderItemTreeConsumer extends Consumer {
   private Effect onEvent(OrderItemBranch.Event.LeafToBeCreated event) {
     log.info("Event: {}", event);
 
-    var command = new OrderItemsLeaf.Command.CreateLeaf(
+    var command = new OrderItemsLeaf.Command.CreateOrderItems(
         event.branchId(),
         event.parentBranchId(),
         event.orderId(),

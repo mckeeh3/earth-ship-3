@@ -77,7 +77,7 @@ public class OrderStockItemsView extends View {
     static OrderStockItemRow eventToRow(OrderStockItemRow row, OrderItemsLeaf.Event event) {
 
       return switch (event) {
-        case OrderItemsLeaf.Event.LeafCreated e -> new OrderStockItemRow(e.leafId(), e.stockId(), false, false);
+        case OrderItemsLeaf.Event.OrderItemsCreated e -> new OrderStockItemRow(e.leafId(), e.stockId(), false, false);
         default -> row;
       };
     }
