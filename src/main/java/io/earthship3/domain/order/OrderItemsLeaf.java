@@ -11,8 +11,8 @@ public interface OrderItemsLeaf {
   public record State(
       String leafId,
       String parentBranchId,
-      String orderId,
       String stockId,
+      String quantityId,
       int quantity,
       List<OrderStockItem> orderStockItems,
       Optional<Instant> readyToShipAt,
@@ -82,8 +82,8 @@ public interface OrderItemsLeaf {
       var leafQuantityUpdated = new Event.LeafQuantityUpdated(
           leafId,
           parentBranchId,
-          orderId,
           stockId,
+          quantityId,
           newQuantity,
           newOrderStockItems,
           newQuantity > 0 ? Optional.empty() : Optional.of(Instant.now()),
@@ -105,8 +105,8 @@ public interface OrderItemsLeaf {
               new Event.OrderItemsNeedStockItems(
                   leafId,
                   parentBranchId,
-                  orderId,
                   stockId,
+                  quantityId,
                   newQuantity,
                   newOrderStockItems));
     }
@@ -147,8 +147,8 @@ public interface OrderItemsLeaf {
           new Event.LeafQuantityUpdated(
               leafId,
               parentBranchId,
-              orderId,
               stockId,
+              quantityId,
               newQuantity,
               newOrderStockItems,
               newQuantity > 0 ? Optional.empty() : Optional.of(Instant.now()),
@@ -172,8 +172,8 @@ public interface OrderItemsLeaf {
           new Event.LeafQuantityUpdated(
               leafId,
               parentBranchId,
-              orderId,
               stockId,
+              quantityId,
               newQuantity,
               newOrderStockItems,
               newQuantity > 0 ? Optional.empty() : Optional.of(Instant.now()),
@@ -197,8 +197,8 @@ public interface OrderItemsLeaf {
       return new State(
           event.leafId(),
           event.parentBranchId(),
-          event.orderId(),
           event.stockId(),
+          event.quantityId(),
           event.quantity(),
           event.orderStockItems(),
           Optional.empty(),
@@ -209,8 +209,8 @@ public interface OrderItemsLeaf {
       return new State(
           leafId,
           parentBranchId,
-          orderId,
           stockId,
+          quantityId,
           event.quantity(),
           event.orderStockItems(),
           event.readyToShipAt(),
@@ -233,8 +233,8 @@ public interface OrderItemsLeaf {
       return new State(
           leafId,
           parentBranchId,
-          orderId,
           stockId,
+          quantityId,
           quantity,
           orderStockItems,
           event.readyToShipAt(),
@@ -310,16 +310,16 @@ public interface OrderItemsLeaf {
     record OrderItemsCreated(
         String leafId,
         String parentBranchId,
-        String orderId,
         String stockId,
+        String quantityId,
         int quantity,
         List<OrderStockItem> orderStockItems) implements Event {}
 
     record LeafQuantityUpdated(
         String leafId,
         String parentBranchId,
-        String orderId,
         String stockId,
+        String quantityId,
         int quantity,
         List<OrderStockItem> orderStockItems,
         Optional<Instant> readyToShipAt,
@@ -328,8 +328,8 @@ public interface OrderItemsLeaf {
     record OrderItemsNeedStockItems(
         String leafId,
         String parentBranchId,
-        String orderId,
         String stockId,
+        String quantityId,
         int quantity,
         List<OrderStockItem> orderStockItems) implements Event {}
 

@@ -22,11 +22,11 @@ public class OrderItemsLeafEntityTest {
 
     var leafId = randomUUID();
     var parentBranchId = randomUUID();
-    var orderId = "123";
+    var quantityId = "123";
     var stockId = "234";
     var quantity = 5;
 
-    var command = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, orderId, stockId, quantity);
+    var command = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, stockId, quantityId, quantity);
     var result = testKit.method(OrderItemsLeafEntity::createLeaf).invoke(command);
 
     assertTrue(result.isReply());
@@ -37,7 +37,7 @@ public class OrderItemsLeafEntityTest {
       var event = result.getNextEventOfType(OrderItemsLeaf.Event.OrderItemsCreated.class);
       assertEquals(leafId, event.leafId());
       assertEquals(parentBranchId, event.parentBranchId());
-      assertEquals(orderId, event.orderId());
+      assertEquals(quantityId, event.quantityId());
       assertEquals(stockId, event.stockId());
       assertEquals(quantity, event.quantity());
       assertEquals(quantity, event.orderStockItems().size());
@@ -47,7 +47,7 @@ public class OrderItemsLeafEntityTest {
       var event = result.getNextEventOfType(OrderItemsLeaf.Event.LeafQuantityUpdated.class);
       assertEquals(leafId, event.leafId());
       assertEquals(parentBranchId, event.parentBranchId());
-      assertEquals(orderId, event.orderId());
+      assertEquals(quantityId, event.quantityId());
       assertEquals(stockId, event.stockId());
       assertEquals(quantity, event.quantity());
       assertEquals(quantity, event.orderStockItems().size());
@@ -57,7 +57,7 @@ public class OrderItemsLeafEntityTest {
       var event = result.getNextEventOfType(OrderItemsLeaf.Event.OrderItemsNeedStockItems.class);
       assertEquals(leafId, event.leafId());
       assertEquals(parentBranchId, event.parentBranchId());
-      assertEquals(orderId, event.orderId());
+      assertEquals(quantityId, event.quantityId());
       assertEquals(stockId, event.stockId());
       assertEquals(quantity, event.quantity());
       assertEquals(quantity, event.orderStockItems().size());
@@ -67,7 +67,7 @@ public class OrderItemsLeafEntityTest {
       var state = testKit.getState();
       assertEquals(leafId, state.leafId());
       assertEquals(parentBranchId, state.parentBranchId());
-      assertEquals(orderId, state.orderId());
+      assertEquals(quantityId, state.quantityId());
       assertEquals(stockId, state.stockId());
       assertEquals(quantity, state.quantity());
       assertEquals(quantity, state.orderStockItems().size());
@@ -80,12 +80,12 @@ public class OrderItemsLeafEntityTest {
 
     // First create the leaf
     var leafId = randomUUID();
-    var orderId = randomUUID();
+    var quantityId = randomUUID();
     var quantity = 5;
     var parentBranchId = randomUUID();
     var stockId = "stock-123";
 
-    var createCommand = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, orderId, stockId, quantity);
+    var createCommand = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, stockId, quantityId, quantity);
     testKit.method(OrderItemsLeafEntity::createLeaf).invoke(createCommand);
 
     // Then set to back ordered on because allocation is only allowed when the leaf is back ordered
@@ -106,7 +106,7 @@ public class OrderItemsLeafEntityTest {
       var event = result.getNextEventOfType(OrderItemsLeaf.Event.LeafQuantityUpdated.class);
       assertEquals(leafId, event.leafId());
       assertEquals(parentBranchId, event.parentBranchId());
-      assertEquals(orderId, event.orderId());
+      assertEquals(quantityId, event.quantityId());
       assertEquals(stockId, event.stockId());
       assertEquals(quantity - stockItemIds.size(), event.quantity());
 
@@ -135,7 +135,7 @@ public class OrderItemsLeafEntityTest {
       var state = testKit.getState();
       assertEquals(leafId, state.leafId());
       assertEquals(parentBranchId, state.parentBranchId());
-      assertEquals(orderId, state.orderId());
+      assertEquals(quantityId, state.quantityId());
       assertEquals(stockId, state.stockId());
       assertEquals(quantity - stockItemIds.size(), state.quantity());
       assertTrue(state.readyToShipAt().isEmpty());
@@ -159,12 +159,12 @@ public class OrderItemsLeafEntityTest {
 
     // First create the leaf
     var leafId = randomUUID();
-    var orderId = randomUUID();
+    var quantityId = randomUUID();
     var quantity = 5;
     var parentBranchId = randomUUID();
     var stockId = "stock-123";
 
-    var createCommand = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, orderId, stockId, quantity);
+    var createCommand = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, stockId, quantityId, quantity);
     testKit.method(OrderItemsLeafEntity::createLeaf).invoke(createCommand);
 
     {
@@ -186,7 +186,7 @@ public class OrderItemsLeafEntityTest {
         var event = result.getNextEventOfType(OrderItemsLeaf.Event.LeafQuantityUpdated.class);
         assertEquals(leafId, event.leafId());
         assertEquals(parentBranchId, event.parentBranchId());
-        assertEquals(orderId, event.orderId());
+        assertEquals(quantityId, event.quantityId());
         assertEquals(stockId, event.stockId());
         assertEquals(quantity - stockItemIds.size(), event.quantity());
 
@@ -215,7 +215,7 @@ public class OrderItemsLeafEntityTest {
         var state = testKit.getState();
         assertEquals(leafId, state.leafId());
         assertEquals(parentBranchId, state.parentBranchId());
-        assertEquals(orderId, state.orderId());
+        assertEquals(quantityId, state.quantityId());
         assertEquals(stockId, state.stockId());
         assertEquals(quantity - stockItemIds.size(), state.quantity());
         assertTrue(state.readyToShipAt().isEmpty());
@@ -252,7 +252,7 @@ public class OrderItemsLeafEntityTest {
         var event = result.getNextEventOfType(OrderItemsLeaf.Event.LeafQuantityUpdated.class);
         assertEquals(leafId, event.leafId());
         assertEquals(parentBranchId, event.parentBranchId());
-        assertEquals(orderId, event.orderId());
+        assertEquals(quantityId, event.quantityId());
         assertEquals(stockId, event.stockId());
         assertEquals(0, event.quantity());
 
@@ -294,12 +294,12 @@ public class OrderItemsLeafEntityTest {
 
     // First create the leaf
     var leafId = randomUUID();
-    var orderId = randomUUID();
+    var quantityId = randomUUID();
     var quantity = 5;
     var parentBranchId = randomUUID();
     var stockId = "stock-123";
 
-    var createCommand = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, orderId, stockId, quantity);
+    var createCommand = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, stockId, quantityId, quantity);
     testKit.method(OrderItemsLeafEntity::createLeaf).invoke(createCommand);
 
     {
@@ -348,12 +348,12 @@ public class OrderItemsLeafEntityTest {
 
     // First create the leaf
     var leafId = randomUUID();
-    var orderId = randomUUID();
+    var quantityId = randomUUID();
     var quantity = 15;
     var parentBranchId = randomUUID();
     var stockId = "stock-123";
 
-    var createCommand = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, orderId, stockId, quantity);
+    var createCommand = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, stockId, quantityId, quantity);
     testKit.method(OrderItemsLeafEntity::createLeaf).invoke(createCommand);
 
     {
@@ -439,12 +439,12 @@ public class OrderItemsLeafEntityTest {
 
     // First create the leaf
     var leafId = randomUUID();
-    var orderId = randomUUID();
+    var quantityId = randomUUID();
     var quantity = 5;
     var parentBranchId = randomUUID();
     var stockId = "stock-123";
 
-    var createCommand = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, orderId, stockId, quantity);
+    var createCommand = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, stockId, quantityId, quantity);
     testKit.method(OrderItemsLeafEntity::createLeaf).invoke(createCommand);
 
     // Then get the state
@@ -455,7 +455,7 @@ public class OrderItemsLeafEntityTest {
     assertNotNull(state);
     assertEquals(leafId, state.leafId());
     assertEquals(parentBranchId, state.parentBranchId());
-    assertEquals(orderId, state.orderId());
+    assertEquals(quantityId, state.quantityId());
     assertEquals(stockId, state.stockId());
     assertEquals(quantity, state.quantity());
     assertEquals(quantity, state.orderStockItems().size());

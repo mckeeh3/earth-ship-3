@@ -59,9 +59,9 @@ public class StockItemsBranchEntity extends EventSourcedEntity<StockItemsBranch.
 
     return switch (event) {
       case StockItemsBranch.Event.StockItemsCreated e -> currentState().onEvent(e);
+      case StockItemsBranch.Event.DelegateToSubBranch e -> currentState().onEvent(e);
       case StockItemsBranch.Event.BranchToBeAdded e -> currentState().onEvent(e);
       case StockItemsBranch.Event.LeafToBeAdded e -> currentState().onEvent(e);
-      case StockItemsBranch.Event.DelegateToSubBranch e -> currentState().onEvent(e);
       case StockItemsBranch.Event.BranchQuantityUpdated e -> currentState().onEvent(e);
       case StockItemsBranch.Event.LeafQuantityUpdated e -> currentState().onEvent(e);
     };
