@@ -11,6 +11,7 @@ import akka.javasdk.client.ComponentClient;
 import akka.javasdk.consumer.Consumer;
 import io.earthship3.domain.order.OrderItemsBranch;
 import io.earthship3.domain.order.OrderItemsLeaf;
+import io.earthship3.domain.order.OrderItemsLeaf.Quantity;
 
 @ComponentId("order-items-branch-consumer")
 @Consume.FromEventSourcedEntity(OrderItemsBranchEntity.class)
@@ -55,7 +56,7 @@ public class OrderItemBranchConsumer extends Consumer {
         event.parentBranchId(),
         event.stockId(),
         event.quantityId(),
-        event.quantity().allocated());
+        Quantity.of(event.quantity().allocated(), event.quantity().available()));
 
     componentClient.forEventSourcedEntity(event.leafId())
         .method(OrderItemsLeafEntity::createLeaf)

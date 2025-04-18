@@ -13,12 +13,12 @@ public interface StockItemsLeaf {
       String parentBranchId,
       String stockId,
       String quantityId,
-      int quantity,
+      Quantity quantity,
       List<StockOrderItem> stockOrderItems,
       boolean availableForOrders) {
 
     public static State empty() {
-      return new State(null, null, null, null, 0, List.of(), false);
+      return new State(null, null, null, null, Quantity.zero(), List.of(), false);
     }
 
     public boolean isEmpty() {
@@ -32,7 +32,7 @@ public interface StockItemsLeaf {
       }
 
       var stockOrderItems = Stream.generate(() -> new StockOrderItem(randomUUID().toString(), Optional.empty(), Optional.empty()))
-          .limit(command.quantity)
+          .limit(command.quantity.allocated())
           .toList();
 
       return List.of(
@@ -75,7 +75,8 @@ public interface StockItemsLeaf {
         newStockOrderItems = updateStockOrderItems(command.orderItemsLeafId, orderItemId, newStockOrderItems);
       }
 
-      var newQuantity = (int) newStockOrderItems.stream().filter(item -> item.orderItemId().isEmpty()).count();
+      var availableCount = (int) newStockOrderItems.stream().filter(item -> item.orderItemId().isEmpty()).count();
+      var newQuantity = Quantity.of(quantity.allocated(), availableCount);
 
       var leafQuantityUpdated = new Event.LeafQuantityUpdated(
           leafId,
@@ -84,7 +85,7 @@ public interface StockItemsLeaf {
           quantityId,
           newQuantity,
           newStockOrderItems,
-          newQuantity > 0 ? availableForOrders : false);
+          newQuantity.available() > 0 ? availableForOrders : false);
 
       var stockItemsAllocatedToOrderItems = new Event.StockItemsAllocatedToOrderItems(
           leafId,
@@ -94,7 +95,7 @@ public interface StockItemsLeaf {
               .map(item -> new Allocation(leafId, item.orderItemId().get(), command.orderItemsLeafId, item.orderItemId().get()))
               .toList());
 
-      return newQuantity == 0
+      return newQuantity.available() == 0
           ? List.of(leafQuantityUpdated, stockItemsAllocatedToOrderItems)
           : List.of(
               leafQuantityUpdated,
@@ -138,7 +139,9 @@ public interface StockItemsLeaf {
         newStockOrderItems = updateStockOrderItems(allocation.orderItemsLeafId(), allocation.orderItemId(), newStockOrderItems);
       }
 
-      var newQuantity = (int) newStockOrderItems.stream().filter(item -> item.orderItemId().isEmpty()).count();
+      var newQuantity = StockItemsLeaf.Quantity.of(
+          quantity.allocated(),
+          (int) newStockOrderItems.stream().filter(item -> item.orderItemId().isPresent()).count());
 
       return List.of(
           new Event.LeafQuantityUpdated(
@@ -148,7 +151,7 @@ public interface StockItemsLeaf {
               quantityId,
               newQuantity,
               newStockOrderItems,
-              newQuantity > 0 ? availableForOrders : false));
+              newQuantity.available() > 0 ? availableForOrders : false));
     }
 
     // Release order items allocation
@@ -162,7 +165,9 @@ public interface StockItemsLeaf {
         newStockOrderItems = releaseOrderItemFromStockItem(allocation.orderItemsLeafId(), allocation.orderItemId(), newStockOrderItems);
       }
 
-      var newQuantity = (int) newStockOrderItems.stream().filter(item -> item.orderItemId().isEmpty()).count();
+      var newQuantity = StockItemsLeaf.Quantity.of(
+          quantity.allocated(),
+          (int) newStockOrderItems.stream().filter(item -> item.orderItemId().isPresent()).count());
 
       return List.of(
           new Event.LeafQuantityUpdated(
@@ -172,7 +177,7 @@ public interface StockItemsLeaf {
               quantityId,
               newQuantity,
               newStockOrderItems,
-              newQuantity > 0 ? availableForOrders : false));
+              newQuantity.available() > 0 ? availableForOrders : false));
     }
 
     // Set available for orders on/off
@@ -258,6 +263,28 @@ public interface StockItemsLeaf {
     }
   }
 
+  record Quantity(int allocated, int available) {
+    public static Quantity of(int quantity) {
+      return new Quantity(quantity, quantity);
+    }
+
+    public static Quantity of(int allocated, int available) {
+      return new Quantity(allocated, available);
+    }
+
+    public static Quantity zero() {
+      return new Quantity(0, 0);
+    }
+
+    public Quantity add(Quantity other) {
+      return new Quantity(allocated + other.allocated, available + other.available);
+    }
+
+    public Quantity sub(int available) {
+      return new Quantity(allocated, this.available - available);
+    }
+  }
+
   record Allocation(
       String stockItemLeafId,
       String stockItemId,
@@ -275,7 +302,7 @@ public interface StockItemsLeaf {
         String parentBranchId,
         String stockId,
         String quantityId,
-        int quantity) implements Command {}
+        Quantity quantity) implements Command {}
 
     record AllocateStockItemsToOrderItems(
         String leafId,
@@ -303,7 +330,7 @@ public interface StockItemsLeaf {
         String parentBranchId,
         String stockId,
         String quantityId,
-        int quantity,
+        Quantity quantity,
         List<StockOrderItem> stockOrderItems) implements Event {}
 
     record LeafQuantityUpdated(
@@ -311,7 +338,7 @@ public interface StockItemsLeaf {
         String parentBranchId,
         String stockId,
         String quantityId,
-        int quantity,
+        Quantity quantity,
         List<StockOrderItem> stockOrderItems,
         boolean availableForOrders) implements Event {}
 
@@ -320,7 +347,7 @@ public interface StockItemsLeaf {
         String parentBranchId,
         String stockId,
         String quantityId,
-        int quantity,
+        Quantity quantity,
         List<StockOrderItem> stockOrderItems) implements Event {}
 
     record StockItemsAllocatedToOrderItems(

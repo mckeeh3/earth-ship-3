@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import akka.javasdk.testkit.EventSourcedTestKit;
 import io.earthship3.domain.order.OrderItemsLeaf;
+import io.earthship3.domain.order.OrderItemsLeaf.Quantity;
 
 public class OrderItemsLeafEntityTest {
   @Test
@@ -24,7 +25,7 @@ public class OrderItemsLeafEntityTest {
     var parentBranchId = randomUUID();
     var quantityId = "123";
     var stockId = "234";
-    var quantity = 5;
+    var quantity = Quantity.of(5);
 
     var command = new OrderItemsLeaf.Command.CreateOrderItems(leafId, parentBranchId, stockId, quantityId, quantity);
     var result = testKit.method(OrderItemsLeafEntity::createLeaf).invoke(command);
@@ -40,7 +41,7 @@ public class OrderItemsLeafEntityTest {
       assertEquals(quantityId, event.quantityId());
       assertEquals(stockId, event.stockId());
       assertEquals(quantity, event.quantity());
-      assertEquals(quantity, event.orderStockItems().size());
+      assertEquals(quantity.allocated(), event.orderStockItems().size());
     }
 
     {
@@ -50,7 +51,7 @@ public class OrderItemsLeafEntityTest {
       assertEquals(quantityId, event.quantityId());
       assertEquals(stockId, event.stockId());
       assertEquals(quantity, event.quantity());
-      assertEquals(quantity, event.orderStockItems().size());
+      assertEquals(quantity.allocated(), event.orderStockItems().size());
     }
 
     {
@@ -60,7 +61,7 @@ public class OrderItemsLeafEntityTest {
       assertEquals(quantityId, event.quantityId());
       assertEquals(stockId, event.stockId());
       assertEquals(quantity, event.quantity());
-      assertEquals(quantity, event.orderStockItems().size());
+      assertEquals(quantity.allocated(), event.orderStockItems().size());
     }
 
     {
@@ -70,7 +71,7 @@ public class OrderItemsLeafEntityTest {
       assertEquals(quantityId, state.quantityId());
       assertEquals(stockId, state.stockId());
       assertEquals(quantity, state.quantity());
-      assertEquals(quantity, state.orderStockItems().size());
+      assertEquals(quantity.allocated(), state.orderStockItems().size());
     }
   }
 
@@ -81,7 +82,7 @@ public class OrderItemsLeafEntityTest {
     // First create the leaf
     var leafId = randomUUID();
     var quantityId = randomUUID();
-    var quantity = 5;
+    var quantity = Quantity.of(5);
     var parentBranchId = randomUUID();
     var stockId = "stock-123";
 
@@ -108,7 +109,7 @@ public class OrderItemsLeafEntityTest {
       assertEquals(parentBranchId, event.parentBranchId());
       assertEquals(quantityId, event.quantityId());
       assertEquals(stockId, event.stockId());
-      assertEquals(quantity - stockItemIds.size(), event.quantity());
+      assertEquals(Quantity.of(quantity.allocated(), quantity.available() - stockItemIds.size()), event.quantity());
 
       // Verify that the requested items are allocated
       var allocatedItems = event.orderStockItems().stream()
@@ -137,7 +138,7 @@ public class OrderItemsLeafEntityTest {
       assertEquals(parentBranchId, state.parentBranchId());
       assertEquals(quantityId, state.quantityId());
       assertEquals(stockId, state.stockId());
-      assertEquals(quantity - stockItemIds.size(), state.quantity());
+      assertEquals(Quantity.of(quantity.allocated(), quantity.available() - stockItemIds.size()), state.quantity());
       assertTrue(state.readyToShipAt().isEmpty());
       assertTrue(state.backOrderedAt().isEmpty());
 
@@ -160,7 +161,7 @@ public class OrderItemsLeafEntityTest {
     // First create the leaf
     var leafId = randomUUID();
     var quantityId = randomUUID();
-    var quantity = 5;
+    var quantity = Quantity.of(5);
     var parentBranchId = randomUUID();
     var stockId = "stock-123";
 
@@ -188,7 +189,7 @@ public class OrderItemsLeafEntityTest {
         assertEquals(parentBranchId, event.parentBranchId());
         assertEquals(quantityId, event.quantityId());
         assertEquals(stockId, event.stockId());
-        assertEquals(quantity - stockItemIds.size(), event.quantity());
+        assertEquals(Quantity.of(quantity.allocated(), quantity.available() - stockItemIds.size()), event.quantity());
 
         // Verify that the requested items are allocated
         var allocatedItems = event.orderStockItems().stream()
@@ -217,7 +218,7 @@ public class OrderItemsLeafEntityTest {
         assertEquals(parentBranchId, state.parentBranchId());
         assertEquals(quantityId, state.quantityId());
         assertEquals(stockId, state.stockId());
-        assertEquals(quantity - stockItemIds.size(), state.quantity());
+        assertEquals(Quantity.of(quantity.allocated(), quantity.available() - stockItemIds.size()), state.quantity());
         assertTrue(state.readyToShipAt().isEmpty());
         assertTrue(state.backOrderedAt().isEmpty());
 
@@ -254,7 +255,7 @@ public class OrderItemsLeafEntityTest {
         assertEquals(parentBranchId, event.parentBranchId());
         assertEquals(quantityId, event.quantityId());
         assertEquals(stockId, event.stockId());
-        assertEquals(0, event.quantity());
+        assertEquals(0, event.quantity().available());
 
         // Verify that the requested items are allocated
         var allocatedItems = event.orderStockItems().stream()
@@ -282,7 +283,7 @@ public class OrderItemsLeafEntityTest {
     {
       // Then get the state and verify that all items have been allocated
       var state = testKit.getState();
-      assertEquals(0, state.quantity());
+      assertEquals(0, state.quantity().available());
       assertTrue(state.readyToShipAt().isPresent());
       assertTrue(state.backOrderedAt().isEmpty());
     }
@@ -295,7 +296,7 @@ public class OrderItemsLeafEntityTest {
     // First create the leaf
     var leafId = randomUUID();
     var quantityId = randomUUID();
-    var quantity = 5;
+    var quantity = Quantity.of(5);
     var parentBranchId = randomUUID();
     var stockId = "stock-123";
 
@@ -349,7 +350,7 @@ public class OrderItemsLeafEntityTest {
     // First create the leaf
     var leafId = randomUUID();
     var quantityId = randomUUID();
-    var quantity = 15;
+    var quantity = Quantity.of(15);
     var parentBranchId = randomUUID();
     var stockId = "stock-123";
 
@@ -408,7 +409,7 @@ public class OrderItemsLeafEntityTest {
     {
       // Then get the state and verify that all items have been allocated
       var state = testKit.getState();
-      assertEquals(0, state.quantity());
+      assertEquals(0, state.quantity().available());
       allocationsToBeReleased = state.orderStockItems().stream()
           .filter(item -> item.stockItemsLeafId().isPresent() &&
               item.stockItemsLeafId().get().equals(stockItemsLeafIdToBeReleased))
@@ -429,7 +430,7 @@ public class OrderItemsLeafEntityTest {
     {
       // Verify that the state quantity is 5
       var state = testKit.getState();
-      assertEquals(5, state.quantity());
+      assertEquals(5, state.quantity().available());
     }
   }
 
@@ -440,7 +441,7 @@ public class OrderItemsLeafEntityTest {
     // First create the leaf
     var leafId = randomUUID();
     var quantityId = randomUUID();
-    var quantity = 5;
+    var quantity = Quantity.of(5);
     var parentBranchId = randomUUID();
     var stockId = "stock-123";
 
@@ -458,6 +459,6 @@ public class OrderItemsLeafEntityTest {
     assertEquals(quantityId, state.quantityId());
     assertEquals(stockId, state.stockId());
     assertEquals(quantity, state.quantity());
-    assertEquals(quantity, state.orderStockItems().size());
+    assertEquals(quantity.allocated(), state.orderStockItems().size());
   }
 }

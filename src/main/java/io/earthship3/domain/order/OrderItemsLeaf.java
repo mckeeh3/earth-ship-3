@@ -13,13 +13,13 @@ public interface OrderItemsLeaf {
       String parentBranchId,
       String stockId,
       String quantityId,
-      int quantity,
+      Quantity quantity,
       List<OrderStockItem> orderStockItems,
       Optional<Instant> readyToShipAt,
       Optional<Instant> backOrderedAt) {
 
     public static State empty() {
-      return new State(null, null, null, null, 0, List.of(), Optional.empty(), Optional.empty());
+      return new State(null, null, null, null, Quantity.zero(), List.of(), Optional.empty(), Optional.empty());
     }
 
     public boolean isEmpty() {
@@ -33,22 +33,22 @@ public interface OrderItemsLeaf {
       }
 
       var orderStockItems = Stream.generate(() -> new OrderStockItem(randomUUID(), Optional.empty(), Optional.empty()))
-          .limit(command.quantity())
+          .limit(command.quantity().allocated())
           .toList();
 
       return List.of(
           new Event.OrderItemsCreated(
               command.leafId(),
               command.parentBranchId(),
-              command.orderId(),
               command.stockId(),
+              command.quantityId(),
               command.quantity(),
               orderStockItems),
           new Event.LeafQuantityUpdated(
               command.leafId(),
               command.parentBranchId(),
-              command.orderId(),
               command.stockId(),
+              command.quantityId(),
               command.quantity(),
               orderStockItems,
               Optional.empty(),
@@ -56,8 +56,8 @@ public interface OrderItemsLeaf {
           new Event.OrderItemsNeedStockItems(
               command.leafId(),
               command.parentBranchId(),
-              command.orderId(),
               command.stockId(),
+              command.quantityId(),
               command.quantity(),
               orderStockItems));
     }
@@ -77,7 +77,8 @@ public interface OrderItemsLeaf {
         newOrderStockItems = allocateStockItemToOrderItem(command.stockItemsLeafId, stockItemId, newOrderStockItems);
       }
 
-      var newQuantity = (int) newOrderStockItems.stream().filter(item -> item.stockItemId().isEmpty()).count();
+      var availableCount = (int) newOrderStockItems.stream().filter(item -> item.stockItemId().isEmpty()).count();
+      var newQuantity = Quantity.of(quantity.allocated(), availableCount);
 
       var leafQuantityUpdated = new Event.LeafQuantityUpdated(
           leafId,
@@ -86,7 +87,7 @@ public interface OrderItemsLeaf {
           quantityId,
           newQuantity,
           newOrderStockItems,
-          newQuantity > 0 ? Optional.empty() : Optional.of(Instant.now()),
+          newQuantity.available() > 0 ? Optional.empty() : Optional.of(Instant.now()),
           Optional.empty());
 
       var orderItemsAllocatedToStockItems = new Event.OrderItemsAllocatedToStockItems(
@@ -97,7 +98,7 @@ public interface OrderItemsLeaf {
               .map(item -> new Allocation(leafId, item.orderItemId(), command.stockItemsLeafId, item.stockItemId().get()))
               .toList());
 
-      return newQuantity == 0
+      return newQuantity.available() == 0
           ? List.of(leafQuantityUpdated, orderItemsAllocatedToStockItems)
           : List.of(
               leafQuantityUpdated,
@@ -141,7 +142,9 @@ public interface OrderItemsLeaf {
         newOrderStockItems = allocateStockItemToOrderItem(allocation.stockItemsLeafId(), allocation.stockItemId(), newOrderStockItems);
       }
 
-      var newQuantity = (int) newOrderStockItems.stream().filter(item -> item.stockItemId().isEmpty()).count();
+      var newQuantity = Quantity.of(
+          quantity.allocated(),
+          (int) newOrderStockItems.stream().filter(item -> item.stockItemId().isEmpty()).count());
 
       return List.of(
           new Event.LeafQuantityUpdated(
@@ -151,8 +154,8 @@ public interface OrderItemsLeaf {
               quantityId,
               newQuantity,
               newOrderStockItems,
-              newQuantity > 0 ? Optional.empty() : Optional.of(Instant.now()),
-              newQuantity > 0 ? Optional.empty() : backOrderedAt));
+              newQuantity.available() > 0 ? Optional.empty() : Optional.of(Instant.now()),
+              newQuantity.available() > 0 ? Optional.empty() : backOrderedAt));
     }
 
     // Release stock items allocation
@@ -166,7 +169,9 @@ public interface OrderItemsLeaf {
         newOrderStockItems = releaseStockItemFromOrderItem(allocation.stockItemsLeafId(), allocation.stockItemId(), newOrderStockItems);
       }
 
-      var newQuantity = (int) newOrderStockItems.stream().filter(item -> item.stockItemId().isEmpty()).count();
+      var newQuantity = Quantity.of(
+          quantity.allocated(),
+          (int) newOrderStockItems.stream().filter(item -> item.stockItemId().isEmpty()).count());
 
       return List.of(
           new Event.LeafQuantityUpdated(
@@ -176,8 +181,8 @@ public interface OrderItemsLeaf {
               quantityId,
               newQuantity,
               newOrderStockItems,
-              newQuantity > 0 ? Optional.empty() : Optional.of(Instant.now()),
-              newQuantity > 0 ? Optional.empty() : backOrderedAt));
+              newQuantity.available() > 0 ? Optional.empty() : Optional.of(Instant.now()),
+              newQuantity.available() > 0 ? Optional.empty() : backOrderedAt));
     }
 
     // Set back ordered on/off
@@ -267,6 +272,28 @@ public interface OrderItemsLeaf {
     }
   }
 
+  record Quantity(int allocated, int available) {
+    public static Quantity of(int quantity) {
+      return new Quantity(quantity, quantity);
+    }
+
+    public static Quantity of(int allocated, int available) {
+      return new Quantity(allocated, available);
+    }
+
+    public static Quantity zero() {
+      return new Quantity(0, 0);
+    }
+
+    public Quantity add(Quantity other) {
+      return new Quantity(allocated + other.allocated, available + other.available);
+    }
+
+    public Quantity sub(int available) {
+      return new Quantity(allocated, this.available - available);
+    }
+  }
+
   record Allocation(
       String orderItemsLeafId,
       String orderItemId,
@@ -282,9 +309,9 @@ public interface OrderItemsLeaf {
     record CreateOrderItems(
         String leafId,
         String parentBranchId,
-        String orderId,
         String stockId,
-        int quantity) implements Command {}
+        String quantityId,
+        Quantity quantity) implements Command {}
 
     record AllocateOrderItemsToStockItems(
         String leafId,
@@ -312,7 +339,7 @@ public interface OrderItemsLeaf {
         String parentBranchId,
         String stockId,
         String quantityId,
-        int quantity,
+        Quantity quantity,
         List<OrderStockItem> orderStockItems) implements Event {}
 
     record LeafQuantityUpdated(
@@ -320,7 +347,7 @@ public interface OrderItemsLeaf {
         String parentBranchId,
         String stockId,
         String quantityId,
-        int quantity,
+        Quantity quantity,
         List<OrderStockItem> orderStockItems,
         Optional<Instant> readyToShipAt,
         Optional<Instant> backOrderedAt) implements Event {}
@@ -330,7 +357,7 @@ public interface OrderItemsLeaf {
         String parentBranchId,
         String stockId,
         String quantityId,
-        int quantity,
+        Quantity quantity,
         List<OrderStockItem> orderStockItems) implements Event {}
 
     record OrderItemsAllocatedToStockItems(
