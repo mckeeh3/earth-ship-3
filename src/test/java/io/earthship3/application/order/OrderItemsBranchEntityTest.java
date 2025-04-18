@@ -290,7 +290,7 @@ public class OrderItemsBranchEntityTest {
     var updateBranchCommand = new OrderItemsBranch.Command.UpdateBranchQuantity(
         branchId,
         currentState.subBranches().get(0).branchId(),
-        Quantity.of(subBranchQuantity.allocated(), 0));
+        Quantity.of(subBranchQuantity.ordered(), 0));
     var updateBranchResult = testKit.method(OrderItemsBranchEntity::updateBranchQuantity).invoke(updateBranchCommand);
     assertTrue(updateBranchResult.isReply());
     assertEquals(done(), updateBranchResult.getReply());
@@ -300,7 +300,7 @@ public class OrderItemsBranchEntityTest {
       assertNotNull(event);
       assertEquals(branchId, event.branchId());
       assertEquals(parentBranchId, event.parentBranchId());
-      assertEquals(initialQuantity.sub(initialBranchQuantity.available()), event.quantity());
+      assertEquals(initialQuantity.sub(initialBranchQuantity.unallocated()), event.quantity());
       assertEquals(currentState.subBranches().get(0).branchId(), event.subBranchId());
     }
 
@@ -309,7 +309,7 @@ public class OrderItemsBranchEntityTest {
     var updateLeafCommand = new OrderItemsBranch.Command.UpdateLeafQuantity(
         branchId,
         currentState.leaves().get(0).leafId(),
-        leafQuantity.sub(leafQuantity.available()));
+        leafQuantity.sub(leafQuantity.unallocated()));
     var updateLeafResult = testKit.method(OrderItemsBranchEntity::updateLeafQuantity).invoke(updateLeafCommand);
     assertTrue(updateLeafResult.isReply());
     assertEquals(done(), updateLeafResult.getReply());
@@ -319,14 +319,14 @@ public class OrderItemsBranchEntityTest {
       assertNotNull(event);
       assertEquals(branchId, event.branchId());
       assertEquals(parentBranchId, event.parentBranchId());
-      assertEquals(initialQuantity.sub(subBranchQuantity.available()).sub(leafQuantity.available()), event.quantity());
+      assertEquals(initialQuantity.sub(subBranchQuantity.unallocated()).sub(leafQuantity.unallocated()), event.quantity());
       assertEquals(currentState.leaves().get(0).leafId(), event.leafId());
     }
 
     var newState = testKit.getState();
     var newQuantity = newState.quantity();
     assertEquals(
-        initialQuantity.sub(initialBranchQuantity.available()).sub(initialLeafQuantity.available()),
+        initialQuantity.sub(initialBranchQuantity.unallocated()).sub(initialLeafQuantity.unallocated()),
         newQuantity);
   }
 

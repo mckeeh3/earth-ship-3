@@ -49,7 +49,7 @@ public interface StockItemsBranch {
     }
 
     private List<Event> create(Command.AddQuantityToTree command) {
-      var leafQuantities = DistributeQuantity.distributeAllowLeftover(command.quantity().allocated(), maxStockItemsPerLeaf, maxSubBranches);
+      var leafQuantities = DistributeQuantity.distributeAllowLeftover(command.quantity().acquired(), maxStockItemsPerLeaf, maxSubBranches);
       var leftoverQuantity = leafQuantities.leftoverQuantity();
       var branchQuantities = DistributeQuantity.distributeWithoutLeftover(leftoverQuantity, maxStockItemsPerBranch, maxSubBranches);
 
@@ -116,7 +116,7 @@ public interface StockItemsBranch {
     public Event onCommand(Command.UpdateBranchQuantity command) {
       var newSubBranches = subBranches.stream()
           .map(s -> s.branchId.equals(command.subBranchId)
-              ? new SubStockItems(s.branchId, s.stockId, Quantity.of(command.branchQuantity().allocated(), command.branchQuantity().available()))
+              ? new SubStockItems(s.branchId, s.stockId, Quantity.of(command.branchQuantity().acquired(), command.branchQuantity().available()))
               : s)
           .toList();
       var newBranchesQuantity = newSubBranches.stream()
@@ -137,7 +137,7 @@ public interface StockItemsBranch {
     public Event onCommand(Command.UpdateLeafQuantity command) {
       var newLeaves = leaves.stream()
           .map(s -> s.leafId.equals(command.leafId)
-              ? new LeafStockItems(s.leafId, s.stockId, Quantity.of(command.leafQuantity().allocated(), command.leafQuantity().available()))
+              ? new LeafStockItems(s.leafId, s.stockId, Quantity.of(command.leafQuantity().acquired(), command.leafQuantity().available()))
               : s)
           .toList();
       var newLeavesQuantity = newLeaves.stream()
@@ -201,13 +201,13 @@ public interface StockItemsBranch {
     }
   }
 
-  record Quantity(int allocated, int available) {
+  record Quantity(int acquired, int available) {
     public static Quantity of(int quantity) {
       return new Quantity(quantity, quantity);
     }
 
-    public static Quantity of(int allocated, int available) {
-      return new Quantity(allocated, available);
+    public static Quantity of(int acquired, int available) {
+      return new Quantity(acquired, available);
     }
 
     public static Quantity zero() {
@@ -215,11 +215,11 @@ public interface StockItemsBranch {
     }
 
     public Quantity add(Quantity other) {
-      return new Quantity(allocated + other.allocated, available + other.available);
+      return new Quantity(acquired + other.acquired, available + other.available);
     }
 
-    public Quantity sub(int available) {
-      return new Quantity(allocated, this.available - available);
+    public Quantity sub(int stocked) {
+      return new Quantity(acquired, this.available - stocked);
     }
   }
 

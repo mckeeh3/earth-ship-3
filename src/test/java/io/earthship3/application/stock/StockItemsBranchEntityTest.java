@@ -285,7 +285,7 @@ public class StockItemsBranchEntityTest {
     var updateBranchCommand = new StockItemsBranch.Command.UpdateBranchQuantity(
         branchId,
         currentState.subBranches().get(0).branchId(),
-        Quantity.of(subBranchQuantity.allocated(), 0));
+        Quantity.of(subBranchQuantity.acquired(), 0));
     var updateBranchResult = testKit.method(StockItemsBranchEntity::updateBranchQuantity).invoke(updateBranchCommand);
     assertTrue(updateBranchResult.isReply());
     assertEquals(done(), updateBranchResult.getReply());

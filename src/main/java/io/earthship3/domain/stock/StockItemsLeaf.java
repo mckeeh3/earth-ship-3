@@ -32,7 +32,7 @@ public interface StockItemsLeaf {
       }
 
       var stockOrderItems = Stream.generate(() -> new StockOrderItem(randomUUID().toString(), Optional.empty(), Optional.empty()))
-          .limit(command.quantity.allocated())
+          .limit(command.quantity.acquired())
           .toList();
 
       return List.of(
@@ -76,7 +76,7 @@ public interface StockItemsLeaf {
       }
 
       var availableCount = (int) newStockOrderItems.stream().filter(item -> item.orderItemId().isEmpty()).count();
-      var newQuantity = Quantity.of(quantity.allocated(), availableCount);
+      var newQuantity = Quantity.of(quantity.acquired(), availableCount);
 
       var leafQuantityUpdated = new Event.LeafQuantityUpdated(
           leafId,
@@ -140,7 +140,7 @@ public interface StockItemsLeaf {
       }
 
       var newQuantity = StockItemsLeaf.Quantity.of(
-          quantity.allocated(),
+          quantity.acquired(),
           (int) newStockOrderItems.stream().filter(item -> item.orderItemId().isPresent()).count());
 
       return List.of(
@@ -166,7 +166,7 @@ public interface StockItemsLeaf {
       }
 
       var newQuantity = StockItemsLeaf.Quantity.of(
-          quantity.allocated(),
+          quantity.acquired(),
           (int) newStockOrderItems.stream().filter(item -> item.orderItemId().isPresent()).count());
 
       return List.of(
@@ -263,13 +263,13 @@ public interface StockItemsLeaf {
     }
   }
 
-  record Quantity(int allocated, int available) {
+  record Quantity(int acquired, int available) {
     public static Quantity of(int quantity) {
       return new Quantity(quantity, quantity);
     }
 
-    public static Quantity of(int allocated, int available) {
-      return new Quantity(allocated, available);
+    public static Quantity of(int acquired, int available) {
+      return new Quantity(acquired, available);
     }
 
     public static Quantity zero() {
@@ -277,11 +277,11 @@ public interface StockItemsLeaf {
     }
 
     public Quantity add(Quantity other) {
-      return new Quantity(allocated + other.allocated, available + other.available);
+      return new Quantity(acquired + other.acquired, available + other.available);
     }
 
-    public Quantity sub(int available) {
-      return new Quantity(allocated, this.available - available);
+    public Quantity sub(int stocked) {
+      return new Quantity(acquired, this.available - stocked);
     }
   }
 

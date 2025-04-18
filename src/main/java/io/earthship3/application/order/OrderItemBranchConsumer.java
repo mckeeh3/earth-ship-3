@@ -56,7 +56,7 @@ public class OrderItemBranchConsumer extends Consumer {
         event.parentBranchId(),
         event.stockId(),
         event.quantityId(),
-        Quantity.of(event.quantity().allocated(), event.quantity().available()));
+        Quantity.of(event.quantity().ordered(), event.quantity().unallocated()));
 
     componentClient.forEventSourcedEntity(event.leafId())
         .method(OrderItemsLeafEntity::createLeaf)

@@ -52,15 +52,15 @@ public interface OrderItemsBranch {
     }
 
     private List<Event> create(Command.AddQuantityToTree command) {
-      var leafOrderItems = DistributeQuantity.distributeAllowLeftover(command.quantity().allocated(), maxOrderItemsPerLeaf, maxSubBranches);
+      var leafOrderItems = DistributeQuantity.distributeAllowLeftover(command.quantity().ordered(), maxOrderItemsPerLeaf, maxSubBranches);
       var leftoverOrderItems = leafOrderItems.leftoverQuantity();
       var branchOrderItems = DistributeQuantity.distributeWithoutLeftover(leftoverOrderItems, maxOrderItemsPerBranch, maxSubBranches);
 
-      var newBranchSubOrderItems = Stream.generate(() -> new SubOrderItems(randomUUID(), command.stockId, command.quantityId, Quantity.zero()))
+      var newBranchSubOrderItems = Stream.generate(() -> new SubOrderItems(randomUUID(), command.stockId, Quantity.zero(), Optional.empty(), Optional.empty()))
           .limit(maxSubBranches)
           .toList();
 
-      var newLeafSubOrderItems = Stream.generate(() -> new LeafOrderItems(randomUUID(), command.stockId, command.quantityId, Quantity.zero()))
+      var newLeafSubOrderItems = Stream.generate(() -> new LeafOrderItems(randomUUID(), command.stockId, Quantity.zero(), Optional.empty(), Optional.empty()))
           .limit(maxSubBranches)
           .toList();
 
@@ -76,9 +76,10 @@ public interface OrderItemsBranch {
       var branchEvents = IntStream.range(0, branchOrderItems.bucketLevels().size())
           .mapToObj(i -> new SubOrderItems(
               newBranchSubOrderItems.get(i).branchId,
-              command.quantityId,
               command.stockId,
-              Quantity.of(branchOrderItems.bucketLevels().get(i))))
+              Quantity.of(branchOrderItems.bucketLevels().get(i)),
+              Optional.empty(),
+              Optional.empty()))
           .map(s -> new Event.BranchToBeAdded(
               s.branchId,
               command.stockId,
@@ -91,8 +92,9 @@ public interface OrderItemsBranch {
           .mapToObj(i -> new SubOrderItems(
               newLeafSubOrderItems.get(i).leafId,
               command.stockId,
-              command.quantityId,
-              Quantity.of(leafOrderItems.bucketLevels().get(i))))
+              Quantity.of(leafOrderItems.bucketLevels().get(i)),
+              Optional.empty(),
+              Optional.empty()))
           .map(s -> new Event.LeafToBeAdded(
               s.branchId,
               command.stockId(),
@@ -120,7 +122,12 @@ public interface OrderItemsBranch {
     public List<Event> onCommand(Command.UpdateBranchQuantity command) {
       var newSubBranches = subBranches.stream()
           .map(s -> s.branchId.equals(command.subBranchId)
-              ? new SubOrderItems(s.branchId, s.orderId, s.stockId, Quantity.of(command.branchQuantity().allocated(), command.branchQuantity().available()))
+              ? new SubOrderItems(
+                  s.branchId,
+                  s.stockId,
+                  Quantity.of(command.branchQuantity().ordered(), command.branchQuantity().unallocated()),
+                  s.readyToShipAt,
+                  s.backOrderedAt)
               : s)
           .toList();
       var newBranchesQuantity = newSubBranches.stream()
@@ -129,19 +136,36 @@ public interface OrderItemsBranch {
       var newLeavesQuantity = leaves.stream()
           .map(s -> s.quantity())
           .reduce(Quantity.zero(), (a, c) -> a.add(c));
+      var newBackOrderedAt = newSubBranches.stream()
+          .anyMatch(s -> s.backOrderedAt.isPresent())
+              ? Optional.of(Instant.now())
+              : Optional.<Instant>empty();
+      var newReadyToShipAt = newBackOrderedAt.isPresent()
+          ? Optional.<Instant>empty()
+          : newSubBranches.stream()
+              .allMatch(s -> s.readyToShipAt.isPresent())
+                  ? Optional.of(Instant.now())
+                  : Optional.<Instant>empty();
 
       return List.of(new Event.BranchQuantityUpdated(
           branchId,
           parentBranchId,
           newBranchesQuantity.add(newLeavesQuantity),
           command.subBranchId(),
+          newReadyToShipAt,
+          newBackOrderedAt,
           newSubBranches));
     }
 
     public List<Event> onCommand(Command.UpdateLeafQuantity command) {
       var newLeaves = leaves.stream()
           .map(s -> s.leafId.equals(command.leafId())
-              ? new LeafOrderItems(s.leafId, s.orderId, s.stockId, Quantity.of(command.leafQuantity().allocated(), command.leafQuantity().available()))
+              ? new LeafOrderItems(
+                  s.leafId,
+                  s.stockId,
+                  Quantity.of(command.leafQuantity().ordered(), command.leafQuantity().unallocated()),
+                  s.readyToShipAt,
+                  s.backOrderedAt)
               : s)
           .toList();
       var newLeavesQuantity = newLeaves.stream()
@@ -150,12 +174,24 @@ public interface OrderItemsBranch {
       var newBranchesQuantity = subBranches.stream()
           .map(s -> s.quantity())
           .reduce(Quantity.zero(), (a, c) -> a.add(c));
+      var newBackOrderedAt = newLeaves.stream()
+          .anyMatch(s -> s.backOrderedAt.isPresent())
+              ? Optional.of(Instant.now())
+              : Optional.<Instant>empty();
+      var newReadyToShipAt = newBackOrderedAt.isPresent()
+          ? Optional.<Instant>empty()
+          : newLeaves.stream()
+              .allMatch(s -> s.readyToShipAt.isPresent())
+                  ? Optional.of(Instant.now())
+                  : Optional.<Instant>empty();
 
       return List.of(new Event.LeafQuantityUpdated(
           branchId,
           parentBranchId,
           newBranchesQuantity.add(newLeavesQuantity),
           command.leafId(),
+          newReadyToShipAt,
+          newBackOrderedAt,
           newLeaves));
     }
 
@@ -211,13 +247,13 @@ public interface OrderItemsBranch {
     }
   }
 
-  record Quantity(int allocated, int available) {
+  record Quantity(int ordered, int unallocated) {
     public static Quantity of(int quantity) {
       return new Quantity(quantity, quantity);
     }
 
-    public static Quantity of(int allocated, int available) {
-      return new Quantity(allocated, available);
+    public static Quantity of(int ordered, int unallocated) {
+      return new Quantity(ordered, unallocated);
     }
 
     public static Quantity zero() {
@@ -225,25 +261,27 @@ public interface OrderItemsBranch {
     }
 
     public Quantity add(Quantity other) {
-      return new Quantity(allocated + other.allocated, available + other.available);
+      return new Quantity(ordered + other.ordered, unallocated + other.unallocated);
     }
 
-    public Quantity sub(int available) {
-      return new Quantity(allocated, this.available - available);
+    public Quantity sub(int stocked) {
+      return new Quantity(ordered, this.unallocated - stocked);
     }
   }
 
   record SubOrderItems(
       String branchId,
-      String orderId,
       String stockId,
-      Quantity quantity) {}
+      Quantity quantity,
+      Optional<Instant> readyToShipAt,
+      Optional<Instant> backOrderedAt) {}
 
   record LeafOrderItems(
       String leafId,
-      String orderId,
       String stockId,
-      Quantity quantity) {}
+      Quantity quantity,
+      Optional<Instant> readyToShipAt,
+      Optional<Instant> backOrderedAt) {}
 
   public sealed interface Command {
     record AddQuantityToTree(
@@ -300,6 +338,8 @@ public interface OrderItemsBranch {
         Optional<String> parentBranchId,
         Quantity quantity,
         String subBranchId,
+        Optional<Instant> readyToShipAt,
+        Optional<Instant> backOrderedAt,
         List<SubOrderItems> subBranches) implements Event {}
 
     record LeafQuantityUpdated(
@@ -307,6 +347,8 @@ public interface OrderItemsBranch {
         Optional<String> parentBranchId,
         Quantity quantity,
         String leafId,
+        Optional<Instant> readyToShipAt,
+        Optional<Instant> backOrderedAt,
         List<LeafOrderItems> leaves) implements Event {}
   }
 }

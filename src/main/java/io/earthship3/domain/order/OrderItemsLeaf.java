@@ -33,7 +33,7 @@ public interface OrderItemsLeaf {
       }
 
       var orderStockItems = Stream.generate(() -> new OrderStockItem(randomUUID(), Optional.empty(), Optional.empty()))
-          .limit(command.quantity().allocated())
+          .limit(command.quantity().ordered())
           .toList();
 
       return List.of(
@@ -78,7 +78,7 @@ public interface OrderItemsLeaf {
       }
 
       var availableCount = (int) newOrderStockItems.stream().filter(item -> item.stockItemId().isEmpty()).count();
-      var newQuantity = Quantity.of(quantity.allocated(), availableCount);
+      var newQuantity = Quantity.of(quantity.ordered(), availableCount);
 
       var leafQuantityUpdated = new Event.LeafQuantityUpdated(
           leafId,
@@ -87,7 +87,7 @@ public interface OrderItemsLeaf {
           quantityId,
           newQuantity,
           newOrderStockItems,
-          newQuantity.available() > 0 ? Optional.empty() : Optional.of(Instant.now()),
+          newQuantity.unallocated() > 0 ? Optional.empty() : Optional.of(Instant.now()),
           Optional.empty());
 
       var orderItemsAllocatedToStockItems = new Event.OrderItemsAllocatedToStockItems(
@@ -98,7 +98,7 @@ public interface OrderItemsLeaf {
               .map(item -> new Allocation(leafId, item.orderItemId(), command.stockItemsLeafId, item.stockItemId().get()))
               .toList());
 
-      return newQuantity.available() == 0
+      return newQuantity.unallocated() == 0
           ? List.of(leafQuantityUpdated, orderItemsAllocatedToStockItems)
           : List.of(
               leafQuantityUpdated,
@@ -143,7 +143,7 @@ public interface OrderItemsLeaf {
       }
 
       var newQuantity = Quantity.of(
-          quantity.allocated(),
+          quantity.ordered(),
           (int) newOrderStockItems.stream().filter(item -> item.stockItemId().isEmpty()).count());
 
       return List.of(
@@ -154,8 +154,8 @@ public interface OrderItemsLeaf {
               quantityId,
               newQuantity,
               newOrderStockItems,
-              newQuantity.available() > 0 ? Optional.empty() : Optional.of(Instant.now()),
-              newQuantity.available() > 0 ? Optional.empty() : backOrderedAt));
+              newQuantity.unallocated() > 0 ? Optional.empty() : Optional.of(Instant.now()),
+              newQuantity.unallocated() > 0 ? Optional.empty() : backOrderedAt));
     }
 
     // Release stock items allocation
@@ -170,7 +170,7 @@ public interface OrderItemsLeaf {
       }
 
       var newQuantity = Quantity.of(
-          quantity.allocated(),
+          quantity.ordered(),
           (int) newOrderStockItems.stream().filter(item -> item.stockItemId().isEmpty()).count());
 
       return List.of(
@@ -181,8 +181,8 @@ public interface OrderItemsLeaf {
               quantityId,
               newQuantity,
               newOrderStockItems,
-              newQuantity.available() > 0 ? Optional.empty() : Optional.of(Instant.now()),
-              newQuantity.available() > 0 ? Optional.empty() : backOrderedAt));
+              newQuantity.unallocated() > 0 ? Optional.empty() : Optional.of(Instant.now()),
+              newQuantity.unallocated() > 0 ? Optional.empty() : backOrderedAt));
     }
 
     // Set back ordered on/off
@@ -193,7 +193,8 @@ public interface OrderItemsLeaf {
 
       return List.of(
           new Event.BackOrderedSet(
-              leafId(),
+              leafId,
+              parentBranchId,
               command.backOrderedAt().isEmpty() ? readyToShipAt : Optional.empty(),
               command.backOrderedAt()));
     }
@@ -272,13 +273,13 @@ public interface OrderItemsLeaf {
     }
   }
 
-  record Quantity(int allocated, int available) {
+  record Quantity(int ordered, int unallocated) {
     public static Quantity of(int quantity) {
       return new Quantity(quantity, quantity);
     }
 
-    public static Quantity of(int allocated, int available) {
-      return new Quantity(allocated, available);
+    public static Quantity of(int ordered, int unallocated) {
+      return new Quantity(ordered, unallocated);
     }
 
     public static Quantity zero() {
@@ -286,11 +287,11 @@ public interface OrderItemsLeaf {
     }
 
     public Quantity add(Quantity other) {
-      return new Quantity(allocated + other.allocated, available + other.available);
+      return new Quantity(ordered + other.ordered, unallocated + other.unallocated);
     }
 
-    public Quantity sub(int available) {
-      return new Quantity(allocated, this.available - available);
+    public Quantity sub(int stocked) {
+      return new Quantity(ordered, this.unallocated - stocked);
     }
   }
 
@@ -372,6 +373,7 @@ public interface OrderItemsLeaf {
 
     record BackOrderedSet(
         String leafId,
+        String parentBranchId,
         Optional<Instant> readyToShipAt,
         Optional<Instant> backOrderedAt) implements Event {}
   }
