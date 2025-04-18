@@ -1,0 +1,19 @@
+@urlPrefix = http://localhost:9001
+@inventoryOrderId = inv-order-1
+@stockId = P0001
+@stockName = Product 1
+@quantity = 100
+
+### Create inventory order
+POST {{urlPrefix}}/inventory/create
+Content-Type: application/json
+
+{
+  "inventoryOrderId": "{{inventoryOrderId}}",
+  "stockId": "{{stockId}}",
+  "stockName": "{{stockName}}",
+  "quantity": {{quantity}}
+}
+
+### Get inventory order
+GET {{urlPrefix}}/inventory/{{inventoryOrderId}}

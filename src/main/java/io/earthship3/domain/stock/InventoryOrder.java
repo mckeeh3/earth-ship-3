@@ -22,19 +22,35 @@ public interface InventoryOrder {
         return Optional.empty();
       }
 
-      return Optional.of(new Event.InventoryOrderCreated(command.inventoryOrderId, command.stockId, command.stockName, command.quantity));
+      return Optional.of(new Event.InventoryOrderCreated(
+          command.inventoryOrderId,
+          command.stockId,
+          command.stockName,
+          command.quantity));
     }
 
     public State onEvent(Event.InventoryOrderCreated event) {
-      return new State(event.inventoryOrderId, event.stockId, event.stockName, event.quantity);
+      return new State(
+          event.inventoryOrderId,
+          event.stockId,
+          event.stockName,
+          event.quantity);
     }
   }
 
   public sealed interface Command {
-    record CreateInventoryOrder(String inventoryOrderId, String stockId, String stockName, int quantity) implements Command {}
+    record CreateInventoryOrder(
+        String inventoryOrderId,
+        String stockId,
+        String stockName,
+        int quantity) implements Command {}
   }
 
   public sealed interface Event {
-    record InventoryOrderCreated(String inventoryOrderId, String stockId, String stockName, int quantity) implements Event {}
+    record InventoryOrderCreated(
+        String inventoryOrderId,
+        String stockId,
+        String stockName,
+        int quantity) implements Event {}
   }
 }

@@ -13,13 +13,13 @@ import io.earthship3.domain.order.Order;
 import io.earthship3.domain.order.OrderItemsBranch;
 import io.earthship3.domain.order.OrderItemsBranch.Quantity;
 
-@ComponentId("order-to-order-items-consumer")
+@ComponentId("order-to-order-items-branch-consumer")
 @Consume.FromEventSourcedEntity(OrderEntity.class)
-public class OrderToOrderItemsConsumer extends Consumer {
-  private final Logger log = LoggerFactory.getLogger(OrderToOrderItemsConsumer.class);
+public class OrderToOrderItemsBranchConsumer extends Consumer {
+  private final Logger log = LoggerFactory.getLogger(OrderToOrderItemsBranchConsumer.class);
   private final ComponentClient componentClient;
 
-  public OrderToOrderItemsConsumer(ComponentClient componentClient) {
+  public OrderToOrderItemsBranchConsumer(ComponentClient componentClient) {
     this.componentClient = componentClient;
   }
 
@@ -41,9 +41,10 @@ public class OrderToOrderItemsConsumer extends Consumer {
         Quantity.of(event.lineItem().quantity()),
         parentOrderItemId);
 
-    return effects().asyncDone(
-        componentClient.forEventSourcedEntity(event.orderId())
-            .method(OrderItemsBranchEntity::addQuantity)
-            .invokeAsync(command));
+    componentClient.forEventSourcedEntity(event.stockId())
+        .method(OrderItemsBranchEntity::addQuantity)
+        .invoke(command);
+
+    return effects().done();
   }
 }

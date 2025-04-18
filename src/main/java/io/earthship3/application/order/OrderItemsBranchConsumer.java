@@ -15,11 +15,11 @@ import io.earthship3.domain.order.OrderItemsLeaf.Quantity;
 
 @ComponentId("order-items-branch-consumer")
 @Consume.FromEventSourcedEntity(OrderItemsBranchEntity.class)
-public class OrderItemBranchConsumer extends Consumer {
-  private final Logger log = LoggerFactory.getLogger(OrderItemBranchConsumer.class);
+public class OrderItemsBranchConsumer extends Consumer {
+  private final Logger log = LoggerFactory.getLogger(OrderItemsBranchConsumer.class);
   private final ComponentClient componentClient;
 
-  public OrderItemBranchConsumer(ComponentClient componentClient) {
+  public OrderItemsBranchConsumer(ComponentClient componentClient) {
     this.componentClient = componentClient;
   }
 
@@ -27,11 +27,12 @@ public class OrderItemBranchConsumer extends Consumer {
     return switch (event) {
       case OrderItemsBranch.Event.BranchToBeAdded e -> onEvent(e);
       case OrderItemsBranch.Event.LeafToBeAdded e -> onEvent(e);
+      case OrderItemsBranch.Event.DelegateToSubBranch e -> onEvent(e);
       default -> effects().ignore();
     };
   }
 
-  private Effect onEvent(OrderItemsBranch.Event.BranchToBeAdded event) {
+  Effect onEvent(OrderItemsBranch.Event.BranchToBeAdded event) {
     log.info("Event: {}", event);
 
     var command = new OrderItemsBranch.Command.AddQuantityToTree(
@@ -48,7 +49,7 @@ public class OrderItemBranchConsumer extends Consumer {
     return effects().done();
   }
 
-  private Effect onEvent(OrderItemsBranch.Event.LeafToBeAdded event) {
+  Effect onEvent(OrderItemsBranch.Event.LeafToBeAdded event) {
     log.info("Event: {}", event);
 
     var command = new OrderItemsLeaf.Command.CreateOrderItems(
@@ -60,6 +61,23 @@ public class OrderItemBranchConsumer extends Consumer {
 
     componentClient.forEventSourcedEntity(event.leafId())
         .method(OrderItemsLeafEntity::createLeaf)
+        .invoke(command);
+
+    return effects().done();
+  }
+
+  Effect onEvent(OrderItemsBranch.Event.DelegateToSubBranch event) {
+    log.info("Event: {}", event);
+
+    var command = new OrderItemsBranch.Command.AddQuantityToTree(
+        event.subBranchId(),
+        event.stockId(),
+        event.quantityId(),
+        event.quantity(),
+        Optional.of(event.branchId()));
+
+    componentClient.forEventSourcedEntity(event.subBranchId())
+        .method(OrderItemsBranchEntity::addQuantity)
         .invoke(command);
 
     return effects().done();
